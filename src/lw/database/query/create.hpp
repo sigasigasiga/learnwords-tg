@@ -1,8 +1,6 @@
 #pragma once
 
-namespace lw::database {
-
-namespace query {
+namespace lw::database::query {
 
 inline constexpr std::string_view create_db = R"lw_cpp(
     CREATE DATABASE IF NOT EXISTS `learnwords_tg`
@@ -49,6 +47,4 @@ inline constexpr std::string_view create_user_data = R"lw_cpp(
     )
 )lw_cpp";
 
-} // namespace query
-
-} // namespace lw::database
+} // namespace lw::database::query

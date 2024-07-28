@@ -3,7 +3,7 @@
 #include <boost/asio/experimental/as_single.hpp>
 #include <boost/asio/experimental/co_composed.hpp>
 
-#include "lw/database/queries.hpp"
+#include "lw/database/query/create.hpp"
 
 namespace lw::database {
 
