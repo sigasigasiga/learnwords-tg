@@ -7,8 +7,10 @@
 
 namespace lw::database {
 
+using async_prepare_completion_t = void(boost::system::error_code);
+
 template<typename MysqlConnection, typename CompletionToken>
-requires boost::asio::completion_token_for<CompletionToken, void(boost::system::error_code)>
+requires boost::asio::completion_token_for<CompletionToken, async_prepare_completion_t>
 decltype(auto) async_prepare(MysqlConnection &conn, CompletionToken &&token)
 {
     // honestly, i don't get how a coroutine may return `void`, but:
@@ -18,6 +20,9 @@ decltype(auto) async_prepare(MysqlConnection &conn, CompletionToken &&token)
         boost::system::error_code ret;
         try {
             boost::mysql::results _;
+
+            // i don't know why we need to use `asio::deferred` here instead of
+            // `asio::use_awaitable`
             co_await conn.async_execute(query::create_db, _, boost::asio::deferred);
             co_await conn.async_execute(query::use_db, _, boost::asio::deferred);
             co_await conn.async_execute(query::create_sentences, _, boost::asio::deferred);
@@ -30,8 +35,8 @@ decltype(auto) async_prepare(MysqlConnection &conn, CompletionToken &&token)
         co_return {ret};
     };
 
-    return boost::asio::async_initiate<CompletionToken, void(boost::system::error_code)>(
-        boost::asio::experimental::co_composed<void(boost::system::error_code)>(
+    return boost::asio::async_initiate<CompletionToken, async_prepare_completion_t>(
+        boost::asio::experimental::co_composed<async_prepare_completion_t>(
             std::move(impl), // it doesn't compile without `std::move` and i don't know why
             conn
         ),
