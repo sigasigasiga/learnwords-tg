@@ -28,8 +28,6 @@ executable(
     'src/lw/application/inventory.cpp',
     'src/lw/application/inventory.cpp',
 
-    'src/lw/database/prepare.cpp',
-
     'src/lw/error/code.cpp',
   ],
   include_directories: g_includes,

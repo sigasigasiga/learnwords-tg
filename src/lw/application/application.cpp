@@ -128,7 +128,7 @@ boost::asio::awaitable<void> application::async_init()
     };
 
     co_await mysql_.async_connect(params, boost::asio::use_awaitable);
-    co_await database::prepare(mysql_);
+    co_await database::async_prepare(mysql_, boost::asio::use_awaitable);
 
 #if 0
     inventory_builder builder{io_.get_executor()};

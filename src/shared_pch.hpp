@@ -39,6 +39,8 @@
 
 // thirdparty
 #include <boost/asio.hpp>
+#include <boost/beast.hpp>
+#include <boost/json.hpp>
 #include <boost/mysql.hpp>
 #include <spdlog/spdlog.h>
 #include <tl/optional.hpp>

@@ -1,18 +1,18 @@
-#include "lw/database/prepare.hpp"
+#pragma once
 
 namespace lw::database {
 
-namespace {
+namespace query {
 
-constexpr std::string_view create_db = R"lw_cpp(
+inline constexpr std::string_view create_db = R"lw_cpp(
     CREATE DATABASE IF NOT EXISTS `learnwords_tg`
 )lw_cpp";
 
-constexpr std::string_view use_db = R"lw_cpp(
+inline constexpr std::string_view use_db = R"lw_cpp(
     USE `learnwords_tg`
 )lw_cpp";
 
-constexpr std::string_view create_sentences = R"lw_cpp(
+inline constexpr std::string_view create_sentences = R"lw_cpp(
     CREATE TABLE IF NOT EXISTS `sentences`(
         `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
         `date_added` DATE DEFAULT(CURRENT_DATE),
@@ -23,7 +23,7 @@ constexpr std::string_view create_sentences = R"lw_cpp(
         CHARACTER SET utf8 COLLATE utf8_general_ci
 )lw_cpp";
 
-constexpr std::string_view create_settings = R"lw_cpp(
+inline constexpr std::string_view create_settings = R"lw_cpp(
     CREATE TABLE IF NOT EXISTS `settings`(
         `tg_user_id` BIGINT UNSIGNED NOT NULL,
         `remind_time` TIME NOT NULL CHECK(HOUR(`remind_time`) < 24),
@@ -32,7 +32,7 @@ constexpr std::string_view create_settings = R"lw_cpp(
     )
 )lw_cpp";
 
-constexpr std::string_view create_user_data = R"lw_cpp(
+inline constexpr std::string_view create_user_data = R"lw_cpp(
     CREATE TABLE IF NOT EXISTS `user_data`(
         `tg_user_id` BIGINT UNSIGNED NOT NULL,
         `sentence_id` BIGINT UNSIGNED NOT NULL,
@@ -49,16 +49,6 @@ constexpr std::string_view create_user_data = R"lw_cpp(
     )
 )lw_cpp";
 
-} // anonymous namespace
-
-boost::asio::awaitable<void> prepare(boost::mysql::any_connection &conn)
-{
-    boost::mysql::results _;
-    co_await conn.async_execute(create_db, _, boost::asio::use_awaitable);
-    co_await conn.async_execute(use_db, _, boost::asio::use_awaitable);
-    co_await conn.async_execute(create_sentences, _, boost::asio::use_awaitable);
-    co_await conn.async_execute(create_settings, _, boost::asio::use_awaitable);
-    co_await conn.async_execute(create_user_data, _, boost::asio::use_awaitable);
-}
+} // namespace query
 
 } // namespace lw::database
