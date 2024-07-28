@@ -39,7 +39,10 @@
 
 // thirdparty
 #include <boost/asio.hpp>
-#include <boost/beast.hpp>
+#include <boost/asio/experimental/co_composed.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/ssl.hpp>
 #include <boost/json.hpp>
 #include <boost/mysql.hpp>
 #include <spdlog/spdlog.h>
