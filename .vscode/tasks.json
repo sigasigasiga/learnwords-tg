@@ -1,0 +1,10 @@
+{
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "meson compile -C bin"
+        }
+    ],
+    "version": "2.0.0"
+}

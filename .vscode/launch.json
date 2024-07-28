@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb-dap",
+            "request": "launch",
+            "name": "(lldb) Launch server",
+            "program": "${workspaceFolder}/bin/learnwords-tg",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "runInTerminal": true,
+            "preLaunchTask": "Build"
+        }
+    ]
+}
