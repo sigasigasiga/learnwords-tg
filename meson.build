@@ -28,6 +28,9 @@ executable(
     'src/lw/application/inventory.cpp',
     'src/lw/application/inventory.cpp',
 
+    'src/lw/telegram/process_response.cpp',
+    'src/lw/telegram/update/polling.cpp',
+
     'src/lw/error/code.cpp',
   ],
   include_directories: g_includes,

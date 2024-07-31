@@ -45,5 +45,6 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/json.hpp>
 #include <boost/mysql.hpp>
+#include <boost/signals2.hpp>
 #include <spdlog/spdlog.h>
 #include <tl/optional.hpp>

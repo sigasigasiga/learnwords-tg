@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lw/util/asio/co_initiate.hpp"
 #include "lw/util/http/json_body.hpp"
 
 namespace lw::telegram {
@@ -18,10 +19,16 @@ public:
     requires boost::asio::completion_token_for<CompletionToken, connect_signature_t>
     auto async_connect(CompletionToken &&handler);
 
-    // TODO: add params
     template<typename CompletionToken>
     requires boost::asio::completion_token_for<CompletionToken, request_signature_t>
-    auto async_request(std::string_view token, std::string_view method, CompletionToken &&handler);
+    auto async_request(
+        std::string_view token,
+        std::string_view method,
+        boost::json::object json,
+        CompletionToken &&handler
+    );
+
+    decltype(auto) get_executor();
 
 private:
     using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
@@ -75,22 +82,26 @@ requires boost::asio::completion_token_for<CompletionToken, connection::request_
 auto connection::async_request(
     std::string_view token,
     std::string_view method,
+    boost::json::object json,
     CompletionToken &&handler
 )
 {
-    auto impl = [](auto state, stream_t &stream, std::string_view token, std::string_view method
-                ) -> void {
+    auto impl = [](auto state,
+                   stream_t &stream,
+                   std::string_view token,
+                   std::string_view method,
+                   boost::json::object json) -> void {
         boost::system::error_code ec;
-        boost::json::value json;
+        boost::json::value result;
 
         try {
             const auto path = fmt::format("/bot{}/{}", token, method);
 
-            // TODO: the body shouldn't be empty?
-            boost::beast::http::request<boost::beast::http::empty_body> req;
-            req.method(boost::beast::http::verb::get);
+            boost::beast::http::request<util::http::json_body> req;
+            req.method(boost::beast::http::verb::post);
             req.target(path);
             req.set(boost::beast::http::field::host, "api.telegram.org");
+            req.body() = std::move(json);
             req.prepare_payload();
 
             co_await boost::beast::http::async_write(stream, req, boost::asio::deferred);
@@ -104,21 +115,27 @@ auto connection::async_request(
                 boost::asio::deferred
             );
 
-            json = std::move(response).body();
+            result = std::move(response).body();
         } catch(const boost::system::system_error &err) {
             ec = err.code();
         }
 
-        co_return {ec, json};
+        co_return {ec, std::move(result)};
     };
 
-    return boost::asio::async_initiate<CompletionToken, request_signature_t>(
-        boost::asio::experimental::co_composed<request_signature_t>(std::move(impl), stream_),
-        handler,
+    return util::asio::co_initiate<request_signature_t>(
+        std::forward<CompletionToken>(handler),
+        std::move(impl),
         std::ref(stream_),
         token,
-        method
+        method,
+        std::move(json)
     );
+}
+
+inline decltype(auto) connection::get_executor()
+{
+    return stream_.get_executor();
 }
 
 } // namespace lw::telegram
