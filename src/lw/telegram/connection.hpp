@@ -1,5 +1,6 @@
 #pragma once
 
+#include "lw/telegram/process_response.hpp"
 #include "lw/util/asio/co_initiate.hpp"
 #include "lw/util/http/json_body.hpp"
 
@@ -8,46 +9,52 @@ namespace lw::telegram {
 class connection
 {
 public:
-    connection(boost::asio::any_io_executor ex, boost::asio::ssl::context &ssl_ctx);
+    using connect_signature_t = void(boost::system::error_code);
+    using request_signature_t = void(boost::system::error_code, result);
+    using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
 
 public:
-    using connect_signature_t = void(boost::system::error_code);
-    using request_signature_t = void(boost::system::error_code, boost::json::value);
+    using executor_type = stream_t::executor_type;
+
+public:
+    connection(executor_type ex, boost::asio::ssl::context &ssl_ctx);
 
 public:
     template<typename CompletionToken>
     requires boost::asio::completion_token_for<CompletionToken, connect_signature_t>
-    auto async_connect(CompletionToken &&handler);
+    auto async_connect(std::string token, CompletionToken &&handler);
 
+    // clang-format off
     template<typename CompletionToken>
     requires boost::asio::completion_token_for<CompletionToken, request_signature_t>
     auto async_request(
-        std::string_view token,
         std::string_view method,
         boost::json::object json,
         CompletionToken &&handler
     );
+    // clang-format on
 
     decltype(auto) get_executor();
 
 private:
-    using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
-
-private:
     stream_t stream_;
+    std::string token_;
 };
 
 // -------------------------------------------------------------------------------------------------
 
-inline connection::connection(boost::asio::any_io_executor ex, boost::asio::ssl::context &ssl_ctx)
+inline connection::connection(executor_type ex, boost::asio::ssl::context &ssl_ctx)
     : stream_{std::move(ex), ssl_ctx}
 {
 }
 
 template<typename CompletionToken>
 requires boost::asio::completion_token_for<CompletionToken, connection::connect_signature_t>
-auto connection::async_connect(CompletionToken &&handler)
+auto connection::async_connect(std::string token, CompletionToken &&handler)
 {
+    // TODO: is this the best place to set the token?
+    token_ = std::move(token);
+
     auto impl = [](auto state, stream_t &stream) -> void {
         boost::system::error_code ret;
 
@@ -70,9 +77,9 @@ auto connection::async_connect(CompletionToken &&handler)
         co_return {ret};
     };
 
-    return boost::asio::async_initiate<CompletionToken, connect_signature_t>(
-        boost::asio::experimental::co_composed<connect_signature_t>(std::move(impl), stream_),
-        handler,
+    return util::asio::co_initiate<connect_signature_t>(
+        std::forward<CompletionToken>(handler),
+        std::move(impl),
         std::ref(stream_)
     );
 }
@@ -80,19 +87,19 @@ auto connection::async_connect(CompletionToken &&handler)
 template<typename CompletionToken>
 requires boost::asio::completion_token_for<CompletionToken, connection::request_signature_t>
 auto connection::async_request(
-    std::string_view token,
     std::string_view method,
     boost::json::object json,
     CompletionToken &&handler
 )
 {
+    assert(!token_.empty());
     auto impl = [](auto state,
                    stream_t &stream,
                    std::string_view token,
                    std::string_view method,
                    boost::json::object json) -> void {
         boost::system::error_code ec;
-        boost::json::value result;
+        result ret;
 
         try {
             const auto path = fmt::format("/bot{}/{}", token, method);
@@ -101,6 +108,7 @@ auto connection::async_request(
             req.method(boost::beast::http::verb::post);
             req.target(path);
             req.set(boost::beast::http::field::host, "api.telegram.org");
+            req.set(boost::beast::http::field::content_type, "application/json");
             req.body() = std::move(json);
             req.prepare_payload();
 
@@ -115,19 +123,19 @@ auto connection::async_request(
                 boost::asio::deferred
             );
 
-            result = std::move(response).body();
+            ret = process_response(std::move(response).body());
         } catch(const boost::system::system_error &err) {
             ec = err.code();
         }
 
-        co_return {ec, std::move(result)};
+        co_return {ec, std::move(ret)};
     };
 
     return util::asio::co_initiate<request_signature_t>(
         std::forward<CompletionToken>(handler),
         std::move(impl),
         std::ref(stream_),
-        token,
+        token_,
         method,
         std::move(json)
     );

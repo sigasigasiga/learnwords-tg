@@ -1,8 +1,10 @@
 #pragma once
 
+#include "lw/util/scoped.hpp"
+
 namespace lw::telegram::update {
 
-class interface
+class interface : private util::scoped
 {
 public:
     virtual ~interface() = default;
