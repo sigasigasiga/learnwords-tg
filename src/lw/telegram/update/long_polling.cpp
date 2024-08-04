@@ -3,7 +3,7 @@
 namespace lw::telegram::update {
 
 // interface
-boost::signals2::connection long_polling::connect(slot_t slot)
+boost::signals2::scoped_connection long_polling::connect(slot_t slot)
 {
     return signal_.connect(std::move(slot));
 }

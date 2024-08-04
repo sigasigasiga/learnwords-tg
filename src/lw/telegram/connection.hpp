@@ -104,6 +104,8 @@ auto connection::async_request(
         try {
             const auto path = fmt::format("/bot{}/{}", token, method);
 
+            spdlog::trace("lw::telegram::connection --> {}", fmt::streamed(json));
+
             boost::beast::http::request<util::http::json_body> req;
             req.method(boost::beast::http::verb::post);
             req.target(path);
@@ -122,6 +124,8 @@ auto connection::async_request(
                 response,
                 boost::asio::deferred
             );
+
+            spdlog::trace("lw::telegram::connection <-- {}", fmt::streamed(response.body()));
 
             ret = process_response(std::move(response).body());
         } catch(const boost::system::system_error &err) {

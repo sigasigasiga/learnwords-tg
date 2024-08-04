@@ -27,7 +27,7 @@ public:
     );
 
 public: // interface
-    boost::signals2::connection connect(slot_t slot) final;
+    [[nodiscard]] boost::signals2::scoped_connection connect(slot_t slot) final;
 
 private:
     boost::signals2::signal<signature_t> signal_;

@@ -14,7 +14,7 @@ public:
     using slot_t = std::function<signature_t>;
 
 public:
-    virtual boost::signals2::connection connect(slot_t slot) = 0;
+    [[nodiscard]] virtual boost::signals2::scoped_connection connect(slot_t slot) = 0;
 };
 
 } // namespace lw::telegram::update
