@@ -9,8 +9,8 @@ namespace lw::telegram::update {
 [[nodiscard]] util::asio::coroutine<boost::json::object> long_polling(
     connection &conn,
     std::chrono::seconds timeout,
-    int limit,
-    util::flag_set<allowed_updates> allowed
+    int limit = 100,
+    util::flag_set<allowed_updates> allowed = {}
 );
 
 } // namespace lw::telegram::update
