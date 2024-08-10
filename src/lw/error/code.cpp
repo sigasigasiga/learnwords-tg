@@ -25,15 +25,20 @@ std::string category::message(int condition) const
     return std::string(get_description(static_cast<code>(condition)));
 }
 
-exception::exception(code c)
+exception::exception(enum code c)
     : std::runtime_error{fmt::format("{} ({})", get_description(c), std::to_underlying(c))}
+    , c_{c}
 {
 }
 
-exception::exception(code c, std::string_view prefix)
-    : std::runtime_error{
-          fmt::format("{}: {} ({})", prefix, get_description(c), std::to_underlying(c))
-      }
+exception::exception(enum code c, std::string_view prefix)
+    : std::runtime_error{fmt::format(
+          "{}: {} ({})",
+          prefix,
+          get_description(c),
+          std::to_underlying(c)
+      )}
+    , c_{c}
 {
 }
 

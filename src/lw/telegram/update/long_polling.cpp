@@ -1,8 +1,10 @@
 #include "lw/telegram/update/long_polling.hpp"
 
+#include "lw/telegram/exception.hpp"
+
 namespace lw::telegram::update {
 
-boost::asio::experimental::coro<update_result, update_result> long_polling(
+util::asio::coroutine<boost::json::object> long_polling(
     connection &conn,
     std::chrono::seconds timeout,
     int limit,
@@ -28,18 +30,18 @@ boost::asio::experimental::coro<update_result, update_result> long_polling(
         auto updates_result =
             co_await conn.async_request("getUpdates", std::move(params), boost::asio::deferred);
 
-        if(updates_result) {
-            auto &updates = updates_result->as_array();
-            if(!updates.empty()) {
-                offset = updates.back().at("update_id").as_int64() + 1;
-            }
+        if(!updates_result) {
+            throw exception{std::move(updates_result).error()};
+        }
 
-            for(auto &upd : updates) {
-                co_yield std::move(upd).as_object();
-                // TODO: discard the update somehow
-            }
-        } else {
-            co_yield std::unexpected{std::move(updates_result).error()};
+        auto &updates = updates_result->as_array();
+        if(!updates.empty()) {
+            offset = updates.back().at("update_id").as_int64() + 1;
+        }
+
+        for(auto &upd : updates) {
+            co_yield std::move(upd).as_object();
+            // TODO: discard the update somehow
         }
     }
 }

@@ -28,9 +28,10 @@ executable(
     'src/lw/application/inventory.cpp',
     'src/lw/application/inventory.cpp',
 
-    'src/lw/telegram/process_response.cpp',
     'src/lw/telegram/update/allowed_updates.cpp',
     'src/lw/telegram/update/long_polling.cpp',
+    'src/lw/telegram/exception.cpp',
+    'src/lw/telegram/process_response.cpp',
 
     'src/lw/error/code.cpp',
   ],

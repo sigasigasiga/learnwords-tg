@@ -2,12 +2,11 @@
 
 #include "lw/telegram/connection.hpp"
 #include "lw/telegram/update/allowed_updates.hpp"
+#include "lw/util/asio/coroutine.hpp"
 
 namespace lw::telegram::update {
 
-using update_result = std::expected<boost::json::object, error>;
-
-[[nodiscard]] boost::asio::experimental::coro<update_result, update_result> long_polling(
+[[nodiscard]] util::asio::coroutine<boost::json::object> long_polling(
     connection &conn,
     std::chrono::seconds timeout,
     int limit,

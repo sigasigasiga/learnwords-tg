@@ -47,6 +47,7 @@
 #include <boost/json.hpp>
 #include <boost/mysql.hpp>
 #include <boost/signals2.hpp>
+#include <boost/utility/base_from_member.hpp>
 #include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
 #include <tl/optional.hpp>

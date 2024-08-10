@@ -10,7 +10,7 @@ class connection
 {
 public:
     using connect_signature_t = void(boost::system::error_code);
-    using request_signature_t = void(boost::system::error_code, result);
+    using request_signature_t = void(boost::system::error_code, processed_result);
     using stream_t = boost::beast::ssl_stream<boost::beast::tcp_stream>;
 
 public:
@@ -99,7 +99,7 @@ auto connection::async_request(
                    std::string_view method,
                    boost::json::object json) -> void {
         boost::system::error_code ec;
-        result ret;
+        processed_result ret;
 
         try {
             const auto path = fmt::format("/bot{}/{}", token, method);

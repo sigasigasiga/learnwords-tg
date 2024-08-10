@@ -24,8 +24,14 @@ public: // std::error_category
 class exception : public std::runtime_error
 {
 public:
-    exception(code c);
-    exception(code c, std::string_view prefix);
+    exception(enum code c);
+    exception(enum code c, std::string_view prefix);
+
+public:
+    enum code code() const noexcept { return c_; }
+
+private:
+    enum code c_;
 };
 
 std::error_condition make_error_condition(code c);
