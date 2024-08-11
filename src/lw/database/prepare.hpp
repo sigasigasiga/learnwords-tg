@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lw/database/query/create.hpp"
+#include "lw/util/asio/co_initiate.hpp"
 
 namespace lw::database {
 
@@ -25,6 +26,8 @@ decltype(auto) async_prepare(MysqlConnection &conn, CompletionToken &&token)
             co_await conn.async_execute(query::create_sentences, _, boost::asio::deferred);
             co_await conn.async_execute(query::create_settings, _, boost::asio::deferred);
             co_await conn.async_execute(query::create_user_data, _, boost::asio::deferred);
+
+            spdlog::info("The database was successfully prepared");
         } catch(const boost::system::system_error &e) {
             ret = e.code();
         }
@@ -32,12 +35,9 @@ decltype(auto) async_prepare(MysqlConnection &conn, CompletionToken &&token)
         co_return {ret};
     };
 
-    return boost::asio::async_initiate<CompletionToken, async_prepare_completion_t>(
-        boost::asio::experimental::co_composed<async_prepare_completion_t>(
-            std::move(impl), // it doesn't compile without `std::move` and i don't know why
-            conn
-        ),
-        token,
+    return util::asio::co_initiate<async_prepare_completion_t>(
+        std::forward<CompletionToken>(token),
+        std::move(impl),
         std::ref(conn)
     );
 }
