@@ -20,6 +20,7 @@ private:
 
 private:
     boost::asio::io_context io_;
+    boost::asio::ssl::context ssl_ctx_;
     boost::program_options::options_description desc_;
     boost::program_options::variables_map args_;
     boost::mysql::any_connection mysql_;

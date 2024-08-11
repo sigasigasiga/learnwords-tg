@@ -2,6 +2,7 @@
 
 #include <pwd.h>
 
+#include "lw/application/service/telegram.hpp"
 #include "lw/database/prepare.hpp"
 #include "lw/error/code.hpp"
 
@@ -16,7 +17,10 @@ constexpr const char mysql_user_opt[] = "mysql-user,u";
 constexpr const char mysql_password_opt[] = "mysql-password,p";
 constexpr const char mysql_socket_opt[] = "mysql-socket,s";
 constexpr const char mysql_ssl_opt[] = "mysql-ssl,S";
+constexpr const char telegram_token_opt[] = "telegram-token,t";
 constexpr const char loglevel_opt[] = "loglevel";
+
+constexpr std::array loglevel_names = SPDLOG_LEVEL_NAMES;
 
 std::string get_os_username()
 {
@@ -45,7 +49,6 @@ boost::mysql::ssl_mode parse_ssl_mode(std::string_view mode)
 
 auto make_options_description()
 {
-    constexpr std::array loglevel_names = SPDLOG_LEVEL_NAMES;
     static const auto loglevel_msg =
         fmt::format("available options: {}", fmt::join(loglevel_names, ", "));
 
@@ -60,6 +63,7 @@ auto make_options_description()
         (mysql_user_opt, po::value<std::string>()->default_value(get_os_username()))
         (mysql_password_opt, po::value<std::string>()->default_value(""))
         (mysql_ssl_opt, po::value<std::string>()->default_value("require"), mysql_ssl_msg)
+        (telegram_token_opt, po::value<std::string>()->required())
     ;
     // clang-format on
 
@@ -88,10 +92,21 @@ boost::mysql::any_address parse_mysql_address(std::string socket_address)
     }
 }
 
+void set_loglevel(const std::string &loglevel_str)
+{
+    if(std::ranges::find(loglevel_names, loglevel_str) == loglevel_names.end()) {
+        throw error::exception{error::code::bad_cmdline_option, "Unknown loglevel"};
+    }
+
+    const auto loglevel = spdlog::level::from_str(loglevel_str);
+    spdlog::set_level(loglevel);
+}
+
 } // anonymous namespace
 
 application::application(int argc, const char *argv[])
-    : desc_{make_options_description()}
+    : ssl_ctx_{boost::asio::ssl::context::tlsv12_client} // TODO: wtf am i choosing
+    , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
     , mysql_{io_.get_executor()}
 {
@@ -107,6 +122,7 @@ error::code application::run()
         return error::code::ok;
     }
 
+    ssl_ctx_.set_default_verify_paths();
     boost::asio::co_spawn(io_.get_executor(), async_init(), boost::asio::detached);
 
     io_.run();
@@ -115,10 +131,17 @@ error::code application::run()
 
 boost::asio::awaitable<void> application::async_init()
 {
-    auto mysql_user = args_["mysql-user"].as<std::string>();
-    auto mysql_password = args_["mysql-password"].as<std::string>();
-    auto mysql_socket = args_["mysql-socket"].as<std::string>();
-    auto ssl_mode = parse_ssl_mode(args_["mysql-ssl"].as<std::string>());
+    const auto mysql_user = args_["mysql-user"].as<std::string>();
+    const auto mysql_password = args_["mysql-password"].as<std::string>();
+    const auto mysql_socket = args_["mysql-socket"].as<std::string>();
+    const auto ssl_mode = parse_ssl_mode(args_["mysql-ssl"].as<std::string>());
+    const auto telegram_token = args_["telegram-token"].as<std::string>();
+    const auto loglevel = args_["loglevel"].as<std::string>();
+
+    if(args_.count(loglevel_opt)) {
+        const auto &loglevel_str = args_[loglevel_opt].as<std::string>();
+        set_loglevel(loglevel_str);
+    }
 
     boost::mysql::connect_params params{
         .server_address = parse_mysql_address(std::move(mysql_socket)),
@@ -130,14 +153,17 @@ boost::asio::awaitable<void> application::async_init()
     co_await mysql_.async_connect(params, boost::asio::use_awaitable);
     co_await database::async_prepare(mysql_, boost::asio::use_awaitable);
 
-#if 0
     inventory_builder builder{io_.get_executor()};
 
-    // TODO: add services
+    auto &telegram = builder.add_service<service::telegram>(
+        io_.get_executor(),
+        ssl_ctx_,
+        telegram_token,
+        service::telegram::update_method::long_polling
+    );
 
     inventory_ = builder.make_inventory();
     inventory_->reload();
-#endif
 }
 
 } // namespace lw::application
