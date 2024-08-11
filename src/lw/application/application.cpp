@@ -2,7 +2,7 @@
 
 #include <pwd.h>
 
-#include "lw/application/service/telegram.hpp"
+#include "lw/application/service/user_dialog.hpp"
 #include "lw/database/prepare.hpp"
 #include "lw/error/code.hpp"
 
@@ -109,6 +109,7 @@ application::application(int argc, const char *argv[])
     , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
     , mysql_{io_.get_executor()}
+    , telegram_{io_.get_executor(), ssl_ctx_}
 {
 }
 
@@ -134,6 +135,7 @@ error::code application::run()
     }
 
     ssl_ctx_.set_default_verify_paths();
+
     auto initiator = async_init(
         std::move(mysql_user),
         std::move(mysql_password),
@@ -163,16 +165,20 @@ boost::asio::awaitable<void> application::async_init(
         .ssl = ssl_mode
     };
 
-    co_await mysql_.async_connect(params, boost::asio::use_awaitable);
+    using namespace boost::asio::experimental::awaitable_operators;
+
+    co_await (
+        mysql_.async_connect(params, boost::asio::use_awaitable) &&
+        telegram_.async_connect(telegram_token, boost::asio::use_awaitable)
+    );
+
     co_await database::async_prepare(mysql_, boost::asio::use_awaitable);
 
     inventory_builder builder{io_.get_executor()};
 
-    auto &telegram = builder.add_service<service::telegram>(
-        io_.get_executor(),
-        ssl_ctx_,
-        telegram_token,
-        service::telegram::update_method::long_polling
+    std::ignore = builder.add_service<service::user_dialog>(
+        telegram_,
+        service::user_dialog::update_method::long_polling
     );
 
     inventory_ = builder.make_inventory();

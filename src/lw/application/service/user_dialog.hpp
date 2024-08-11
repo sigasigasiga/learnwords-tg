@@ -1,12 +1,12 @@
 #pragma once
 
 #include "lw/application/service_base.hpp"
-#include "lw/telegram/connection.hpp"
 #include "lw/telegram/update/polymorphic_update.hpp"
+#include "lw/util/first_flag.hpp"
 
 namespace lw::application::service {
 
-class telegram : public service_base
+class user_dialog : public service_base
 {
 public:
     enum class update_method
@@ -15,23 +15,16 @@ public:
     };
 
 public:
-    telegram(
-        boost::asio::any_io_executor exec,
-        boost::asio::ssl::context &ssl_ctx,
-        std::string token,
-        update_method um
-    );
-
-public:
-    auto &connection() noexcept { return conn_; }
-    auto &update() noexcept { return *update_; }
+    user_dialog(telegram::connection &conn, update_method method);
 
 private: // service_base
     void reload() final;
 
 private:
-    std::string token_;
-    lw::telegram::connection conn_;
+    void on_update(std::exception_ptr ep, boost::json::object update);
+
+private:
+    util::first_flag first_;
     std::unique_ptr<lw::telegram::update::polymorphic_update> update_;
 };
 

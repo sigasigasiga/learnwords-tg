@@ -4,6 +4,7 @@
 
 #include "lw/application/inventory.hpp"
 #include "lw/error/code.hpp"
+#include "lw/telegram/connection.hpp"
 
 namespace lw::application {
 
@@ -30,6 +31,7 @@ private:
     boost::program_options::options_description desc_;
     boost::program_options::variables_map args_;
     boost::mysql::any_connection mysql_;
+    telegram::connection telegram_;
     std::optional<inventory> inventory_;
 };
 

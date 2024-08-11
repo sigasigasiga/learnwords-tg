@@ -27,7 +27,7 @@ executable(
     'src/lw/application/application.cpp',
     'src/lw/application/inventory.cpp',
     'src/lw/application/inventory.cpp',
-    'src/lw/application/service/telegram.cpp',
+    'src/lw/application/service/user_dialog.cpp',
 
     'src/lw/telegram/exception.cpp',
     'src/lw/telegram/process_response.cpp',
