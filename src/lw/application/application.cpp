@@ -122,27 +122,40 @@ error::code application::run()
         return error::code::ok;
     }
 
-    ssl_ctx_.set_default_verify_paths();
-    boost::asio::co_spawn(io_.get_executor(), async_init(), boost::asio::detached);
-
-    io_.run();
-    return error::code::ok;
-}
-
-boost::asio::awaitable<void> application::async_init()
-{
-    const auto mysql_user = args_["mysql-user"].as<std::string>();
-    const auto mysql_password = args_["mysql-password"].as<std::string>();
-    const auto mysql_socket = args_["mysql-socket"].as<std::string>();
-    const auto ssl_mode = parse_ssl_mode(args_["mysql-ssl"].as<std::string>());
-    const auto telegram_token = args_["telegram-token"].as<std::string>();
-    const auto loglevel = args_["loglevel"].as<std::string>();
+    auto mysql_user = args_["mysql-user"].as<std::string>();
+    auto mysql_password = args_["mysql-password"].as<std::string>();
+    auto mysql_socket = args_["mysql-socket"].as<std::string>();
+    auto ssl_mode = parse_ssl_mode(args_["mysql-ssl"].as<std::string>());
+    auto telegram_token = args_["telegram-token"].as<std::string>();
 
     if(args_.count(loglevel_opt)) {
         const auto &loglevel_str = args_[loglevel_opt].as<std::string>();
         set_loglevel(loglevel_str);
     }
 
+    ssl_ctx_.set_default_verify_paths();
+    auto initiator = async_init(
+        std::move(mysql_user),
+        std::move(mysql_password),
+        std::move(mysql_socket),
+        ssl_mode,
+        std::move(telegram_token)
+    );
+
+    boost::asio::co_spawn(io_.get_executor(), std::move(initiator), boost::asio::detached);
+
+    io_.run();
+    return error::code::ok;
+}
+
+boost::asio::awaitable<void> application::async_init(
+    std::string mysql_user,
+    std::string mysql_password,
+    std::string mysql_socket,
+    boost::mysql::ssl_mode ssl_mode,
+    std::string telegram_token
+)
+{
     boost::mysql::connect_params params{
         .server_address = parse_mysql_address(std::move(mysql_socket)),
         .username = std::move(mysql_user),

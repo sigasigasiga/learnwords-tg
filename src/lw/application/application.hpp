@@ -16,7 +16,13 @@ public:
     error::code run();
 
 private:
-    boost::asio::awaitable<void> async_init();
+    boost::asio::awaitable<void> async_init(
+        std::string mysql_user,
+        std::string mysql_password,
+        std::string mysql_socket,
+        boost::mysql::ssl_mode ssl_mode,
+        std::string telegram_token
+    );
 
 private:
     boost::asio::io_context io_;
