@@ -105,7 +105,7 @@ void set_loglevel(const std::string &loglevel_str)
 } // anonymous namespace
 
 application::application(int argc, const char *argv[])
-    : ssl_ctx_{boost::asio::ssl::context::tlsv12_client} // TODO: wtf am i choosing
+    : ssl_ctx_{boost::asio::ssl::context::tls_client}
     , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
     , mysql_{io_.get_executor()}
