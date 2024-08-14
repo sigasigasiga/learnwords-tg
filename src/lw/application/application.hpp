@@ -25,6 +25,8 @@ private:
         std::string telegram_token
     );
 
+    void make_inventory();
+
 private:
     boost::asio::io_context io_;
     boost::asio::ssl::context ssl_ctx_;

@@ -50,5 +50,6 @@
 #include <boost/signals2.hpp>
 #include <boost/utility/base_from_member.hpp>
 #include <fmt/ostream.h>
+#include <siga/util.hpp>
 #include <spdlog/spdlog.h>
 #include <tl/optional.hpp>

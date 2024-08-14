@@ -174,6 +174,11 @@ boost::asio::awaitable<void> application::async_init(
 
     co_await database::async_prepare(mysql_, boost::asio::use_awaitable);
 
+    make_inventory();
+}
+
+void application::make_inventory()
+{
     inventory_builder builder{io_.get_executor()};
 
     std::ignore = builder.add_service<service::user_dialog>(

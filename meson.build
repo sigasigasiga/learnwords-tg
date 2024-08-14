@@ -15,6 +15,7 @@ g_deps = [
   dependency('spdlog'),
   dependency('boost', modules: ['charconv', 'json', 'program_options']),
   dependency('openssl'),
+  dependency('siga-util'),
 ]
 
 # subdir('src/lw/database')
