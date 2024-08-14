@@ -13,7 +13,16 @@ public:
     virtual void reload() {}
 };
 
-class stoppable_service_base : public service_base
+class initializable_service_base : public virtual service_base
+{
+public:
+    using init_handler_t = boost::asio::any_completion_handler<void(std::exception_ptr)>;
+
+public:
+    virtual void init(init_handler_t callback) = 0;
+};
+
+class stoppable_service_base : public virtual service_base
 {
 public:
     using stop_handler_t = boost::asio::any_completion_handler<void()>;

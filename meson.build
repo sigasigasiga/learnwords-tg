@@ -28,6 +28,8 @@ executable(
     'src/lw/application/application.cpp',
     'src/lw/application/inventory.cpp',
     'src/lw/application/inventory.cpp',
+    'src/lw/application/service/db.cpp',
+    'src/lw/application/service/tg.cpp',
     'src/lw/application/service/user_dialog.cpp',
 
     'src/lw/telegram/exception.cpp',

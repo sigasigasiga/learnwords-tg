@@ -2,30 +2,23 @@
 
 #include "lw/application/service_base.hpp"
 #include "lw/telegram/update/polymorphic_update.hpp"
-#include "lw/util/first_flag.hpp"
 
 namespace lw::application::service {
 
-class user_dialog : public service_base
+class user_dialog : public initializable_service_base
 {
 public:
-    enum class update_method
-    {
-        long_polling,
-    };
+    user_dialog(telegram::connection &conn, telegram::update::polymorphic_update &update);
 
-public:
-    user_dialog(telegram::connection &conn, update_method method);
-
-private: // service_base
-    void reload() final;
+private: // initializable_service_base
+    void init(init_handler_t cb) final;
 
 private:
     void on_update(std::exception_ptr ep, boost::json::object update);
 
 private:
-    util::first_flag first_;
-    std::unique_ptr<lw::telegram::update::polymorphic_update> update_;
+    telegram::connection &conn_;
+    telegram::update::polymorphic_update &update_;
 };
 
 } // namespace lw::application::service

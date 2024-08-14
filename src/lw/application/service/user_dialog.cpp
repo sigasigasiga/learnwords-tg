@@ -2,35 +2,17 @@
 
 namespace lw::application::service {
 
-namespace {
-
-auto make_update(telegram::connection &conn, user_dialog::update_method method)
-{
-    switch(method) {
-        case user_dialog::update_method::long_polling:
-            return std::make_unique<telegram::update::polymorphic_long_polling>(
-                conn,
-                std::chrono::seconds{25}
-            );
-    }
-
-    std::unreachable();
-}
-
-} // namespace
-
-user_dialog::user_dialog(telegram::connection &conn, update_method method)
-    : update_{make_update(conn, method)}
+user_dialog::user_dialog(telegram::connection &conn, telegram::update::polymorphic_update &update)
+    : conn_{conn}
+    , update_{update}
 {
 }
 
-// service_base
-void user_dialog::reload()
+// initializable_service_base
+void user_dialog::init(init_handler_t cb)
 {
-    if(first_.get()) {
-        // TODO: wrap the callback
-        update_->async_resume(std::bind_front(&user_dialog::on_update, this));
-    }
+    update_.async_resume(std::bind_front(&user_dialog::on_update, this));
+    boost::asio::post(conn_.get_executor(), std::bind_front(std::move(cb), nullptr));
 }
 
 void user_dialog::on_update(std::exception_ptr ep, boost::json::object update)
@@ -40,7 +22,7 @@ void user_dialog::on_update(std::exception_ptr ep, boost::json::object update)
         std::rethrow_exception(ep);
     }
 
-    update_->async_resume(std::bind_front(&user_dialog::on_update, this));
+    update_.async_resume(std::bind_front(&user_dialog::on_update, this));
 }
 
 } // namespace lw::application::service

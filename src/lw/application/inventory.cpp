@@ -2,61 +2,138 @@
 
 namespace lw::application {
 
+namespace {
+
+class initializer : public siga::util::shared_from_this_base,
+                    private util::scoped
+{
+public:
+    initializer(
+        sftb_tag tag,
+        boost::asio::any_io_executor exec,
+        inventory::service_list_t &services,
+        inventory::init_handler_t callback
+    )
+        : shared_from_this_base{tag}
+        , exec_{std::move(exec)}
+        , begin_{services.begin()}
+        , end_{services.end()}
+        , callback_{std::move(callback)}
+    {
+    }
+
+public:
+    void start(std::exception_ptr ep = nullptr)
+    {
+        if(ep) {
+            return post(std::move(ep));
+        }
+
+        begin_ = std::ranges::find_if(
+            begin_,
+            end_,
+            siga::util::dynamic_value_cast<initializable_service_base *>,
+            &inventory::service_ptr_t::get
+        );
+
+        if(begin_ == end_) {
+            spdlog::info("The inventory was initialized");
+            post(nullptr);
+        } else {
+            auto &svc = dynamic_cast<initializable_service_base &>(**begin_);
+            svc.init(std::bind_front(&initializer::start, shared_from_this()));
+
+            ++begin_;
+        }
+    }
+
+private:
+    void post(std::exception_ptr ep)
+    {
+        boost::asio::post(exec_, std::bind_front(std::move(callback_), std::move(ep)));
+    }
+
+private:
+    boost::asio::any_io_executor exec_;
+    inventory::service_list_t::iterator begin_;
+    inventory::service_list_t::iterator end_;
+    inventory::init_handler_t callback_;
+};
+
+// TODO: `initializer` and `stopper` both look very similar.
+// Is there a way to make them more generic?
+class stopper : public siga::util::shared_from_this_base,
+                private util::scoped
+{
+public:
+    stopper(
+        sftb_tag tag,
+        boost::asio::any_io_executor exec,
+        inventory::service_list_t &services,
+        inventory::stop_handler_t callback
+    )
+        : shared_from_this_base{tag}
+        , exec_{std::move(exec)}
+        , begin_{services.rbegin()}
+        , end_{services.rend()}
+        , callback_{std::move(callback)}
+    {
+    }
+
+public:
+    void start()
+    {
+        begin_ = std::ranges::find_if(
+            begin_,
+            end_,
+            siga::util::dynamic_value_cast<stoppable_service_base *>,
+            &inventory::service_ptr_t::get
+        );
+
+        if(begin_ == end_) {
+            spdlog::info("The inventory was stopped");
+            return boost::asio::post(exec_, std::move(callback_));
+        } else {
+            auto &svc = dynamic_cast<stoppable_service_base &>(**begin_);
+            svc.stop(std::bind_front(&stopper::start, shared_from_this()));
+
+            ++begin_;
+        }
+    }
+
+private:
+    boost::asio::any_io_executor exec_;
+    inventory::service_list_t::reverse_iterator begin_;
+    inventory::service_list_t::reverse_iterator end_;
+    inventory::stop_handler_t callback_;
+};
+
+} // namespace
+
 inventory::inventory(boost::asio::any_io_executor exec, service_list_t services)
     : exec_{std::move(exec)}
-    , state_{std::move(services)}
+    , services_{std::move(services)}
+    , state_{state::init}
 {
+    assert(not services_.empty());
 }
 
-bool inventory::active() const
+void inventory::init(init_handler_t callback)
 {
-    return std::holds_alternative<service_list_t>(state_);
+    assert(state_ == state::init);
+    // TODO: change the state after the `init` is done (or should we just throw it away?)
+    siga::util::make_shared<initializer>(exec_, services_, std::move(callback))->start();
 }
 
 void inventory::reload()
 {
-    assert(active());
-    std::ranges::for_each(std::get<service_list_t>(state_), &service_base::reload);
+    std::ranges::for_each(services_, &service_base::reload);
     spdlog::info("The inventory was reloaded");
 }
 
-void inventory::stop(stop_callback_t callback)
+void inventory::stop(stop_handler_t callback)
 {
-    assert(active());
-    auto services = std::move(std::get<service_list_t>(state_));
-    state_.emplace<stopper>(exec_, std::move(services), std::move(callback));
-}
-
-// stopper
-inventory::stopper::stopper(
-    boost::asio::any_io_executor exec,
-    service_list_t &&services,
-    stop_callback_t callback
-)
-    : exec_{std::move(exec)}
-    , reversed_services_{std::move(services)}
-    , callback_{std::move(callback)}
-{
-    reversed_services_.reverse();
-    stop();
-}
-
-void inventory::stopper::stop()
-{
-    const auto stoppable_it = std::ranges::find_if(reversed_services_, [](const auto &svc_ptr) {
-        return !!dynamic_cast<const stoppable_service_base *>(svc_ptr.get());
-    });
-
-    reversed_services_.erase(reversed_services_.begin(), stoppable_it);
-    if(stoppable_it == reversed_services_.end()) {
-        boost::asio::post(exec_, std::move(callback_));
-    } else {
-        auto &stoppable = static_cast<stoppable_service_base &>(**stoppable_it);
-        stoppable.stop([this, stoppable_it] {
-            reversed_services_.erase(stoppable_it);
-            stop();
-        });
-    }
+    siga::util::make_shared<stopper>(exec_, services_, std::move(callback))->start();
 }
 
 } // namespace lw::application

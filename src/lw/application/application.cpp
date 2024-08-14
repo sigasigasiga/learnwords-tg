@@ -2,8 +2,9 @@
 
 #include <pwd.h>
 
+#include "lw/application/service/db.hpp"
+#include "lw/application/service/tg.hpp"
 #include "lw/application/service/user_dialog.hpp"
-#include "lw/database/prepare.hpp"
 #include "lw/error/code.hpp"
 
 namespace lw::application {
@@ -78,20 +79,6 @@ auto parse_cmd_line(const po::options_description &desc, int argc, const char *a
     return ret;
 }
 
-boost::mysql::any_address parse_mysql_address(std::string socket_address)
-{
-    if(socket_address.empty()) {
-        throw error::exception{error::code::bad_cmdline_option, "The socket cannot be empty"};
-    }
-
-    if(std::filesystem::path{socket_address}.is_absolute()) {
-        return boost::mysql::unix_path{std::move(socket_address)};
-    } else {
-        // TODO;
-        return boost::mysql::host_and_port{};
-    }
-}
-
 void set_loglevel(const std::string &loglevel_str)
 {
     if(std::ranges::find(loglevel_names, loglevel_str) == loglevel_names.end()) {
@@ -102,14 +89,40 @@ void set_loglevel(const std::string &loglevel_str)
     spdlog::set_level(loglevel);
 }
 
+inventory make_inventory(
+    boost::asio::io_context::executor_type exec,
+    boost::asio::ssl::context &ssl_ctx,
+    boost::program_options::variables_map &args
+)
+{
+    inventory_builder builder{exec};
+
+    auto &tg = builder.add_service<service::tg>(
+        exec,
+        ssl_ctx,
+        args["telegram-token"].as<std::string>(),
+        service::tg::update_method::long_polling
+    );
+
+    std::ignore = builder.add_service<service::db>(
+        exec,
+        args["mysql-user"].as<std::string>(),
+        args["mysql-password"].as<std::string>(),
+        args["mysql-socket"].as<std::string>(),
+        parse_ssl_mode(args["mysql-ssl"].as<std::string>())
+    );
+
+    std::ignore = builder.add_service<service::user_dialog>(tg.get_connection(), tg.get_update());
+
+    return builder.make_inventory();
+}
+
 } // anonymous namespace
 
 application::application(int argc, const char *argv[])
     : ssl_ctx_{boost::asio::ssl::context::tls_client}
     , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
-    , mysql_{io_.get_executor()}
-    , telegram_{io_.get_executor(), ssl_ctx_}
 {
 }
 
@@ -123,12 +136,6 @@ error::code application::run()
         return error::code::ok;
     }
 
-    auto mysql_user = args_["mysql-user"].as<std::string>();
-    auto mysql_password = args_["mysql-password"].as<std::string>();
-    auto mysql_socket = args_["mysql-socket"].as<std::string>();
-    auto ssl_mode = parse_ssl_mode(args_["mysql-ssl"].as<std::string>());
-    auto telegram_token = args_["telegram-token"].as<std::string>();
-
     if(args_.count(loglevel_opt)) {
         const auto &loglevel_str = args_[loglevel_opt].as<std::string>();
         set_loglevel(loglevel_str);
@@ -136,57 +143,15 @@ error::code application::run()
 
     ssl_ctx_.set_default_verify_paths();
 
-    auto initiator = async_init(
-        std::move(mysql_user),
-        std::move(mysql_password),
-        std::move(mysql_socket),
-        ssl_mode,
-        std::move(telegram_token)
-    );
-
-    boost::asio::co_spawn(io_.get_executor(), std::move(initiator), boost::asio::detached);
+    inventory_ = make_inventory(io_.get_executor(), ssl_ctx_, args_);
+    inventory_->init(std::bind_front(&application::on_init, this));
 
     io_.run();
     return error::code::ok;
 }
 
-boost::asio::awaitable<void> application::async_init(
-    std::string mysql_user,
-    std::string mysql_password,
-    std::string mysql_socket,
-    boost::mysql::ssl_mode ssl_mode,
-    std::string telegram_token
-)
+void application::on_init(std::exception_ptr ep)
 {
-    boost::mysql::connect_params params{
-        .server_address = parse_mysql_address(std::move(mysql_socket)),
-        .username = std::move(mysql_user),
-        .password = std::move(mysql_password),
-        .ssl = ssl_mode
-    };
-
-    using namespace boost::asio::experimental::awaitable_operators;
-
-    co_await (
-        mysql_.async_connect(params, boost::asio::use_awaitable) &&
-        telegram_.async_connect(telegram_token, boost::asio::use_awaitable)
-    );
-
-    co_await database::async_prepare(mysql_, boost::asio::use_awaitable);
-
-    make_inventory();
-}
-
-void application::make_inventory()
-{
-    inventory_builder builder{io_.get_executor()};
-
-    std::ignore = builder.add_service<service::user_dialog>(
-        telegram_,
-        service::user_dialog::update_method::long_polling
-    );
-
-    inventory_ = builder.make_inventory();
     inventory_->reload();
 }
 

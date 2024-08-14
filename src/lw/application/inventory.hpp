@@ -4,42 +4,40 @@
 
 namespace lw::application {
 
+// How to use the `inventory`:
+// 1. Call `init`
+// 2. After the `init` is done, call `reload`
+// 3. You may then call `reload` every time config changes
+// 4. On shutdown call `stop`
 class inventory
 {
 public:
-    using service_list_t = std::list<std::unique_ptr<service_base>>;
-    using stop_callback_t = boost::asio::any_completion_handler<void()>;
+    using service_ptr_t = std::unique_ptr<service_base>;
+    using service_list_t = std::list<service_ptr_t>;
+
+    using init_handler_t = boost::asio::any_completion_handler<void(std::exception_ptr)>;
+    using stop_handler_t = boost::asio::any_completion_handler<void()>;
 
 public:
     inventory(boost::asio::any_io_executor exec, service_list_t services);
 
 public:
-    bool active() const;
+    void init(init_handler_t callback);
     void reload();
-    void stop(stop_callback_t callback);
+    void stop(stop_handler_t callback);
 
 private:
-    class stopper
+    enum class state
     {
-    public:
-        stopper(
-            boost::asio::any_io_executor exec,
-            service_list_t &&services,
-            stop_callback_t callback
-        );
-
-    private:
-        void stop();
-
-    private:
-        boost::asio::any_io_executor exec_;
-        service_list_t reversed_services_;
-        stop_callback_t callback_;
+        init,
+        in_progress,
+        stopping
     };
 
 private:
     boost::asio::any_io_executor exec_;
-    std::variant<service_list_t, stopper> state_;
+    service_list_t services_;
+    state state_ = state::init;
 };
 
 class inventory_builder

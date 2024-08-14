@@ -17,12 +17,12 @@ public:
     using executor_type = stream_t::executor_type;
 
 public:
-    connection(executor_type ex, boost::asio::ssl::context &ssl_ctx);
+    connection(executor_type ex, boost::asio::ssl::context &ssl_ctx, std::string bot_token);
 
 public:
     template<typename CompletionToken>
     requires boost::asio::completion_token_for<CompletionToken, connect_signature_t>
-    auto async_connect(std::string token, CompletionToken &&handler);
+    auto async_connect(CompletionToken &&handler);
 
     // clang-format off
     template<typename CompletionToken>
@@ -38,22 +38,26 @@ public:
 
 private:
     stream_t stream_;
-    std::string token_;
+    std::string bot_token_;
 };
 
 // -------------------------------------------------------------------------------------------------
 
-inline connection::connection(executor_type ex, boost::asio::ssl::context &ssl_ctx)
+inline connection::connection(
+    executor_type ex,
+    boost::asio::ssl::context &ssl_ctx,
+    std::string bot_token
+)
     : stream_{std::move(ex), ssl_ctx}
+    , bot_token_{std::move(bot_token)}
 {
 }
 
 template<typename CompletionToken>
 requires boost::asio::completion_token_for<CompletionToken, connection::connect_signature_t>
-auto connection::async_connect(std::string token, CompletionToken &&handler)
+auto connection::async_connect(CompletionToken &&handler)
 {
-    // TODO: is this the best place to set the token?
-    token_ = std::move(token);
+    assert(!bot_token_.empty());
 
     auto impl = [](auto state, stream_t &stream) -> void {
         boost::system::error_code ret;
@@ -92,7 +96,8 @@ auto connection::async_request(
     CompletionToken &&handler
 )
 {
-    assert(!token_.empty());
+    assert(!bot_token_.empty());
+
     auto impl = [](auto state,
                    stream_t &stream,
                    std::string_view token,
@@ -143,7 +148,7 @@ auto connection::async_request(
         std::forward<CompletionToken>(handler),
         std::move(impl),
         std::ref(stream_),
-        token_,
+        bot_token_,
         method,
         std::move(json)
     );
