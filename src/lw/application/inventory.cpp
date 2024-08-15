@@ -5,7 +5,7 @@ namespace lw::application {
 namespace {
 
 class initializer : public siga::util::shared_from_this_base,
-                    private util::scoped
+                    private siga::util::scoped
 {
 public:
     initializer(
@@ -63,7 +63,7 @@ private:
 // TODO: `initializer` and `stopper` both look very similar.
 // Is there a way to make them more generic?
 class stopper : public siga::util::shared_from_this_base,
-                private util::scoped
+                private siga::util::scoped
 {
 public:
     stopper(

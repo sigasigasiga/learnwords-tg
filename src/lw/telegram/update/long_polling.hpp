@@ -10,7 +10,7 @@ namespace lw::telegram::update {
     connection &conn,
     std::chrono::seconds timeout,
     int limit = 100,
-    util::flag_set<allowed_updates> allowed = {}
+    siga::util::flag_set<allowed_updates> allowed = {}
 );
 
 } // namespace lw::telegram::update

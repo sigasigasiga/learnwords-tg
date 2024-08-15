@@ -8,7 +8,7 @@ polymorphic_long_polling::polymorphic_long_polling(
     connection &conn,
     std::chrono::seconds timeout,
     int limit,
-    util::flag_set<allowed_updates> allowed
+    siga::util::flag_set<allowed_updates> allowed
 )
     : coro_{long_polling(conn, timeout, limit, allowed)}
 {

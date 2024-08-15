@@ -2,7 +2,7 @@
 
 namespace lw::telegram::update {
 
-boost::json::array make_allowed_updates(util::flag_set<allowed_updates> allowed)
+boost::json::array make_allowed_updates(siga::util::flag_set<allowed_updates> allowed)
 {
     using enum allowed_updates;
 

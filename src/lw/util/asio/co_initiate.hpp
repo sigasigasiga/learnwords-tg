@@ -1,7 +1,5 @@
 #pragma once
 
-#include "lw/util/meta.hpp"
-
 namespace lw::util::asio {
 
 namespace detail {
@@ -18,7 +16,7 @@ auto filter_executors(Tuple tuple, Arg &&arg, Args &&...args)
     constexpr bool is_executor = boost::asio::execution::is_executor<std::decay_t<Arg>>::value;
 
     constexpr bool is_io_object = requires {
-        { arg.get_executor() } -> conceptify<boost::asio::execution::is_executor>;
+        { arg.get_executor() } -> siga::util::conceptify<boost::asio::execution::is_executor>;
     };
 
     if constexpr(is_executor || is_io_object) {

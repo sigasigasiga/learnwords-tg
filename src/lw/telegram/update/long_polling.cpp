@@ -8,7 +8,7 @@ util::asio::coroutine<boost::json::object> long_polling(
     connection &conn,
     std::chrono::seconds timeout,
     int limit,
-    util::flag_set<allowed_updates> allowed
+    siga::util::flag_set<allowed_updates> allowed
 )
 {
     std::optional<std::int64_t> offset;

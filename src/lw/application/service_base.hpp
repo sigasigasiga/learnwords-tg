@@ -1,10 +1,8 @@
 #pragma once
 
-#include "lw/util/scoped.hpp"
-
 namespace lw::application {
 
-class service_base : private util::scoped
+class service_base : private siga::util::scoped
 {
 public:
     virtual ~service_base() = default;

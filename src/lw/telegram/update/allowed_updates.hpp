@@ -1,7 +1,5 @@
 #pragma once
 
-#include "lw/util/flag_set.hpp"
-
 namespace lw::telegram::update {
 
 enum class allowed_updates
@@ -31,6 +29,6 @@ enum class allowed_updates
     removed_chat_boost = (1 << 22),
 };
 
-boost::json::array make_allowed_updates(util::flag_set<allowed_updates> allowed);
+boost::json::array make_allowed_updates(siga::util::flag_set<allowed_updates> allowed);
 
 } // namespace lw::telegram::update

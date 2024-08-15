@@ -3,11 +3,10 @@
 #include "lw/telegram/connection.hpp"
 #include "lw/telegram/update/allowed_updates.hpp"
 #include "lw/util/asio/coroutine.hpp"
-#include "lw/util/scoped.hpp"
 
 namespace lw::telegram::update {
 
-class polymorphic_update : private util::scoped
+class polymorphic_update : private siga::util::scoped
 {
 public:
     using completion_signature = void(std::exception_ptr, boost::json::object);
@@ -36,7 +35,7 @@ public:
         connection &conn,
         std::chrono::seconds timeout,
         int limit = 100,
-        util::flag_set<allowed_updates> allowed = {}
+        siga::util::flag_set<allowed_updates> allowed = {}
     );
 
 public: // polymorphic_update
