@@ -144,7 +144,7 @@ error::code application::run()
     ssl_ctx_.set_default_verify_paths();
 
     inventory_ = make_inventory(io_.get_executor(), ssl_ctx_, args_);
-    inventory_->init(std::bind_front(&application::on_init, this));
+    inventory_->async_init(std::bind_front(&application::on_init, this));
 
     io_.run();
     return error::code::ok;

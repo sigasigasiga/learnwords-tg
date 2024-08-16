@@ -22,9 +22,9 @@ public:
     inventory(boost::asio::any_io_executor exec, service_list_t services);
 
 public:
-    void init(init_handler_t callback);
+    void async_init(init_handler_t callback);
     void reload();
-    void stop(stop_handler_t callback);
+    void async_stop(stop_handler_t callback);
 
 private:
     enum class state

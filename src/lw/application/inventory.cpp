@@ -118,7 +118,7 @@ inventory::inventory(boost::asio::any_io_executor exec, service_list_t services)
     assert(not services_.empty());
 }
 
-void inventory::init(init_handler_t callback)
+void inventory::async_init(init_handler_t callback)
 {
     assert(state_ == state::init);
     // TODO: change the state after the `init` is done (or should we just throw it away?)
@@ -139,7 +139,7 @@ void inventory::reload()
     spdlog::info("The inventory was reloaded");
 }
 
-void inventory::stop(stop_handler_t callback)
+void inventory::async_stop(stop_handler_t callback)
 {
     siga::util::make_shared<stopper>(exec_, services_, std::move(callback))->start();
 }
