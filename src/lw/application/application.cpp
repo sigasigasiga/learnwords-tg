@@ -152,6 +152,10 @@ error::code application::run()
 
 void application::on_init(std::exception_ptr ep)
 {
+    if(ep) {
+        std::rethrow_exception(ep);
+    }
+
     inventory_->reload();
 }
 

@@ -6,9 +6,6 @@ class service_base : private siga::util::scoped
 {
 public:
     virtual ~service_base() = default;
-
-public:
-    virtual void reload() {}
 };
 
 class initializable_service_base : public virtual service_base
@@ -18,6 +15,12 @@ public:
 
 public:
     virtual void init(init_handler_t callback) = 0;
+};
+
+class reloadable_service_base : public virtual service_base
+{
+public:
+    virtual void reload() = 0;
 };
 
 class stoppable_service_base : public virtual service_base

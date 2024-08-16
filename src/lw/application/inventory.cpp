@@ -127,7 +127,15 @@ void inventory::init(init_handler_t callback)
 
 void inventory::reload()
 {
-    std::ranges::for_each(services_, &service_base::reload);
+    // clang-format off
+    auto reloadables = services_
+        | std::views::transform(&service_ptr_t::get)
+        | std::views::transform(siga::util::dynamic_value_cast<reloadable_service_base *>)
+        | std::views::filter(siga::util::not_equal_to(nullptr));
+    // clang-format on
+
+    std::ranges::for_each(reloadables, &reloadable_service_base::reload);
+
     spdlog::info("The inventory was reloaded");
 }
 

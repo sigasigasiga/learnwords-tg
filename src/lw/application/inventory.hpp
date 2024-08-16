@@ -31,7 +31,7 @@ private:
     {
         init,
         in_progress,
-        stopping
+        stopping,
     };
 
 private:
