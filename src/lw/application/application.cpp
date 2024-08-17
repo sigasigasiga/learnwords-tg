@@ -56,6 +56,9 @@ auto make_options_description()
     constexpr const char mysql_ssl_msg[] = "available values: require, enable, disable";
 
     po::options_description desc{"learnwords-tg options"};
+    // TODO: all the auth must be done in the systemd's fashion
+    // https://systemd.io/CREDENTIALS/
+
     // clang-format off
     desc.add_options()
         (help_opt, "produce help message")
