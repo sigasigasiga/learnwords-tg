@@ -64,7 +64,7 @@ auto make_options_description()
         (mysql_user_opt, po::value<std::string>()->default_value(get_os_username()))
         (mysql_password_opt, po::value<std::string>()->default_value(""))
         (mysql_ssl_opt, po::value<std::string>()->default_value("require"), mysql_ssl_msg)
-        (telegram_token_opt, po::value<std::string>()->required())
+        (telegram_token_opt, po::value<std::string>())
     ;
     // clang-format on
 
@@ -89,10 +89,28 @@ void set_loglevel(const std::string &loglevel_str)
     spdlog::set_level(loglevel);
 }
 
+std::string make_token(const boost::program_options::variables_map &args)
+{
+    if(const auto token_arg = args["telegram-token"].as<std::string>(); !token_arg.empty()) {
+        return token_arg;
+    } else if(const auto token_env = std::getenv("LEARNWORDS_TELEGRAM_TOKEN")) {
+        return token_env;
+    } else {
+        throw error::exception{
+            error::code::no_telegram_token,
+            "No telegram token. Set it with `-t` or `LEARNWORDS_TELEGRAM_TOKEN` env var"
+        };
+    }
+}
+
 inventory make_inventory(
     boost::asio::io_context::executor_type exec,
     boost::asio::ssl::context &ssl_ctx,
-    boost::program_options::variables_map &args
+    std::string bot_token,
+    std::string mysql_user,
+    std::string mysql_password,
+    std::string mysql_socket,
+    boost::mysql::ssl_mode ssl
 )
 {
     inventory_builder builder{exec};
@@ -100,16 +118,16 @@ inventory make_inventory(
     auto &tg = builder.add_service<service::tg>(
         exec,
         ssl_ctx,
-        args["telegram-token"].as<std::string>(),
+        std::move(bot_token),
         service::tg::update_method::long_polling
     );
 
     std::ignore = builder.add_service<service::db>(
         exec,
-        args["mysql-user"].as<std::string>(),
-        args["mysql-password"].as<std::string>(),
-        args["mysql-socket"].as<std::string>(),
-        parse_ssl_mode(args["mysql-ssl"].as<std::string>())
+        std::move(mysql_user),
+        std::move(mysql_password),
+        std::move(mysql_socket),
+        ssl
     );
 
     std::ignore = builder.add_service<service::user_dialog>(tg.get_connection(), tg.get_update());
@@ -143,7 +161,16 @@ error::code application::run()
 
     ssl_ctx_.set_default_verify_paths();
 
-    inventory_ = make_inventory(io_.get_executor(), ssl_ctx_, args_);
+    inventory_ = make_inventory(
+        io_.get_executor(),
+        ssl_ctx_,
+        make_token(args_),
+        args_["mysql-user"].as<std::string>(),
+        args_["mysql-password"].as<std::string>(),
+        args_["mysql-socket"].as<std::string>(),
+        parse_ssl_mode(args_["mysql-ssl"].as<std::string>())
+    );
+
     inventory_->async_init(std::bind_front(&application::on_init, this));
 
     io_.run();

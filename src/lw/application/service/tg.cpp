@@ -14,6 +14,8 @@ tg::tg(
           std::chrono::seconds(100)
       )}
 {
+    assert(!conn_.get_token().empty());
+    assert(conn_.get_token().back() != '\n');
 }
 
 // initializable_service_base

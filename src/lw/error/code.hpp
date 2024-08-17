@@ -7,6 +7,7 @@ enum class code : int
     ok = 0,
     caught_exception = 1,
     bad_cmdline_option = 2,
+    no_telegram_token = 3,
 
     // don't use codes bigger than 125
     // https://unix.stackexchange.com/a/418802

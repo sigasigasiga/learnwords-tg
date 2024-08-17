@@ -35,6 +35,7 @@ public:
     // clang-format on
 
     decltype(auto) get_executor();
+    const auto &get_token() const noexcept;
 
 private:
     stream_t stream_;
@@ -157,6 +158,11 @@ auto connection::async_request(
 inline decltype(auto) connection::get_executor()
 {
     return stream_.get_executor();
+}
+
+inline const auto &connection::get_token() const noexcept
+{
+    return bot_token_;
 }
 
 } // namespace lw::telegram
