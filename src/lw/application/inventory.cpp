@@ -60,8 +60,6 @@ private:
     inventory::init_handler_t callback_;
 };
 
-// TODO: `initializer` and `stopper` both look very similar.
-// Is there a way to make them more generic?
 class stopper : public siga::util::shared_from_this_base,
                 private siga::util::scoped
 {
@@ -74,8 +72,9 @@ public:
     )
         : shared_from_this_base{tag}
         , exec_{std::move(exec)}
-        , begin_{services.rbegin()}
-        , end_{services.rend()}
+        , services_{services}
+        , begin_{services_.rbegin()}
+        , end_{services_.rend()}
         , callback_{std::move(callback)}
     {
     }
@@ -83,26 +82,28 @@ public:
 public:
     void start()
     {
-        begin_ = std::ranges::find_if(
-            begin_,
-            end_,
-            siga::util::dynamic_value_cast<stoppable_service_base *>,
-            &inventory::service_ptr_t::get
-        );
-
-        if(begin_ == end_) {
-            spdlog::info("The inventory was stopped");
-            return boost::asio::post(exec_, std::move(callback_));
-        } else {
-            auto &svc = dynamic_cast<stoppable_service_base &>(**begin_);
-            svc.stop(std::bind_front(&stopper::start, shared_from_this()));
-
-            ++begin_;
+        while(begin_ != end_) {
+            if(auto *svc = dynamic_cast<stoppable_service_base *>(begin_->get())) {
+                return svc->stop(std::bind_front(&stopper::on_stopped, shared_from_this()));
+            } else {
+                begin_ = siga::util::rerase(services_, begin_);
+            }
         }
+
+        spdlog::info("The inventory was stopped");
+        boost::asio::post(exec_, std::move(callback_));
+    }
+
+private:
+    void on_stopped()
+    {
+        begin_ = siga::util::rerase(services_, begin_);
+        start();
     }
 
 private:
     boost::asio::any_io_executor exec_;
+    inventory::service_list_t &services_;
     inventory::service_list_t::reverse_iterator begin_;
     inventory::service_list_t::reverse_iterator end_;
     inventory::stop_handler_t callback_;
