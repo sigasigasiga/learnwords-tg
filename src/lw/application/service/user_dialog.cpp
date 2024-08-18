@@ -9,7 +9,7 @@ user_dialog::user_dialog(telegram::connection &conn, telegram::update::polymorph
 }
 
 // initializable_service_base
-void user_dialog::init(init_handler_t cb)
+void user_dialog::async_init(init_handler_t cb)
 {
     update_.async_resume(std::bind_front(&user_dialog::on_update, this));
     boost::asio::post(conn_.get_executor(), std::bind_front(std::move(cb), nullptr));

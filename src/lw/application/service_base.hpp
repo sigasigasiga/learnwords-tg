@@ -14,7 +14,7 @@ public:
     using init_handler_t = boost::asio::any_completion_handler<void(std::exception_ptr)>;
 
 public:
-    virtual void init(init_handler_t callback) = 0;
+    virtual void async_init(init_handler_t callback) = 0;
 };
 
 class reloadable_service_base : public virtual service_base
@@ -29,7 +29,7 @@ public:
     using stop_handler_t = boost::asio::any_completion_handler<void()>;
 
 public:
-    virtual void stop(stop_handler_t callback) = 0;
+    virtual void async_stop(stop_handler_t callback) = 0;
 };
 
 } // namespace lw::application

@@ -48,7 +48,8 @@ public:
     {
     public:
         template<bool isRequest, class Fields>
-        reader(boost::beast::http::header<isRequest, Fields> &h, value_type &body) : body(body)
+        reader(boost::beast::http::header<isRequest, Fields> &h, value_type &body)
+            : body(body)
         {
         }
 

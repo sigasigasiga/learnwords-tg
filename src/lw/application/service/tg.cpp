@@ -19,7 +19,7 @@ tg::tg(
 }
 
 // initializable_service_base
-void tg::init(init_handler_t callback)
+void tg::async_init(init_handler_t callback)
 {
     boost::asio::co_spawn(
         conn_.get_executor(),

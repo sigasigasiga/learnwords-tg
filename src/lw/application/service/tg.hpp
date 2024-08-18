@@ -27,7 +27,7 @@ public:
     auto &get_update() noexcept { return *update_; }
 
 private: // initializable_service_base
-    void init(init_handler_t callback) final;
+    void async_init(init_handler_t callback) final;
 
 private:
     telegram::connection conn_;

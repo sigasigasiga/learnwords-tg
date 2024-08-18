@@ -1,6 +1,5 @@
 #include "lw/application/service/db.hpp"
 
-#include "lw/database/prepare.hpp"
 #include "lw/error/code.hpp"
 
 namespace lw::application::service {
@@ -23,11 +22,12 @@ boost::mysql::any_address parse_mysql_address(std::string socket_address)
 
 boost::asio::awaitable<void> initialize_db( //
     boost::mysql::any_connection &conn,
-    boost::mysql::connect_params params
+    boost::mysql::connect_params params,
+    database::database &database
 )
 {
     co_await conn.async_connect(std::move(params), boost::asio::use_awaitable);
-    co_await database::async_prepare(conn, boost::asio::use_awaitable);
+    co_await database.async_init(boost::asio::use_awaitable);
 }
 
 } // anonymous namespace
@@ -40,21 +40,22 @@ db::db(
     boost::mysql::ssl_mode ssl
 )
     : conn_{exec}
-    , params_{
+    , params_{ //
           .server_address = parse_mysql_address(std::move(socket)),
           .username = std::move(user),
           .password = std::move(password),
           .ssl = ssl
       }
+    , database_{conn_}
 {
 }
 
 // initializable_service_base
-void db::init(init_handler_t callback)
+void db::async_init(init_handler_t callback)
 {
     boost::asio::co_spawn(
         conn_.get_executor(),
-        initialize_db(conn_, std::move(params_)),
+        initialize_db(conn_, std::move(params_), database_),
         std::move(callback)
     );
 }

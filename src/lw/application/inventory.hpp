@@ -43,7 +43,10 @@ private:
 class inventory_builder
 {
 public:
-    inventory_builder(boost::asio::any_io_executor exec) : exec_{std::move(exec)} {}
+    inventory_builder(boost::asio::any_io_executor exec)
+        : exec_{std::move(exec)}
+    {
+    }
 
 public:
     template<typename T, typename... Args>

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lw/application/service_base.hpp"
+#include "lw/database/database.hpp"
 
 namespace lw::application::service {
 
@@ -19,14 +20,15 @@ public:
     );
 
 public:
-    auto &get_mysql() noexcept { return conn_; }
+    auto &get_database() noexcept { return database_; }
 
 private: // initializable_service_base
-    void init(init_handler_t callback) final;
+    void async_init(init_handler_t callback) final;
 
 private:
     connection conn_;
     boost::mysql::connect_params params_;
+    database::database database_;
 };
 
 } // namespace lw::application::service

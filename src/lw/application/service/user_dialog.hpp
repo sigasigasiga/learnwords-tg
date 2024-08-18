@@ -11,7 +11,7 @@ public:
     user_dialog(telegram::connection &conn, telegram::update::polymorphic_update &update);
 
 private: // initializable_service_base
-    void init(init_handler_t cb) final;
+    void async_init(init_handler_t cb) final;
 
 private:
     void on_update(std::exception_ptr ep, boost::json::object update);

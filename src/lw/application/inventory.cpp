@@ -41,7 +41,7 @@ public:
             post(nullptr);
         } else {
             auto &svc = dynamic_cast<initializable_service_base &>(**begin_);
-            svc.init(std::bind_front(&initializer::start, shared_from_this()));
+            svc.async_init(std::bind_front(&initializer::start, shared_from_this()));
 
             ++begin_;
         }
@@ -84,7 +84,7 @@ public:
     {
         while(begin_ != end_) {
             if(auto *svc = dynamic_cast<stoppable_service_base *>(begin_->get())) {
-                return svc->stop(std::bind_front(&stopper::on_stopped, shared_from_this()));
+                return svc->async_stop(std::bind_front(&stopper::on_stopped, shared_from_this()));
             } else {
                 begin_ = siga::util::rerase(services_, begin_);
             }
