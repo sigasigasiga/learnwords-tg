@@ -34,7 +34,7 @@ template<
     std::size_t... Is>
 auto make_composed_from_tuple(Coro &&coro, Tuple tuple, std::index_sequence<Is...>)
 {
-    return boost::asio::experimental::co_composed<Signatures...>(
+    return boost::asio::co_composed<Signatures...>(
         std::forward<Coro>(coro),
         get<Is>(std::move(tuple))... // `std::move` doesn't actually move the tuple
     );
