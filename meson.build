@@ -1,6 +1,6 @@
-# macos cmdline
+# macos build cmdline
 # ```
-# CC=clang CXX=clang++ LDFLAGS="-L/opt/homebrew/opt/llvm/lib/c++ -Wl,-rpath,/opt/homebrew/opt/llvm/lib/c++" meson setup bin
+# meson setup --cross-file brew-cross.ini bin
 # ```
 project(
   'learnwords-tg',
@@ -12,6 +12,7 @@ g_includes = include_directories('src/')
 g_shared_pch = files('src/shared_pch.hpp')[0].full_path() # TODO: what the fuck
 g_deps = [
   dependency('tl-optional'),
+  dependency('fmt'),
   dependency('spdlog'),
   dependency('boost', modules: ['charconv', 'json', 'program_options']),
   dependency('openssl'),
