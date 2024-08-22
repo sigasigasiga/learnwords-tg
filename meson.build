@@ -8,10 +8,9 @@ project(
   default_options: ['cpp_std=c++23']
 )
 
-g_includes = include_directories('src/')
+g_includes = include_directories('src/', 'subprojects/beman-optional26/include/')
 g_shared_pch = files('src/shared_pch.hpp')[0].full_path() # TODO: what the fuck
 g_deps = [
-  dependency('tl-optional'),
   dependency('fmt'),
   dependency('spdlog'),
   dependency('boost', modules: ['charconv', 'json', 'program_options']),

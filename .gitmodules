@@ -1,3 +1,6 @@
 [submodule "subprojects/siga-util"]
 	path = subprojects/siga-util
 	url = git@github.com:sigasigasiga/util.git
+[submodule "subprojects/beman-optional26"]
+	path = subprojects/beman-optional26
+	url = git@github.com:beman-project/Optional26.git

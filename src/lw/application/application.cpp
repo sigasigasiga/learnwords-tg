@@ -125,7 +125,7 @@ inventory make_inventory(
         service::tg::update_method::long_polling
     );
 
-    std::ignore = builder.add_service<service::db>(
+    auto &db = builder.add_service<service::db>(
         exec,
         std::move(mysql_user),
         std::move(mysql_password),
@@ -133,7 +133,11 @@ inventory make_inventory(
         ssl
     );
 
-    std::ignore = builder.add_service<service::user_dialog>(tg.get_connection(), tg.get_update());
+    std::ignore = builder.add_service<service::user_dialog>(
+        tg.get_connection(),
+        tg.get_update(),
+        db.get_database()
+    );
 
     return builder.make_inventory();
 }
