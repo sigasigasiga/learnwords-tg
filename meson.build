@@ -13,6 +13,7 @@ g_shared_pch = files('src/shared_pch.hpp')[0].full_path() # TODO: what the fuck
 g_deps = [
   dependency('fmt'),
   dependency('spdlog'),
+  dependency('magic_enum'),
   dependency('boost', modules: ['charconv', 'json', 'program_options']),
   dependency('openssl'),
   dependency('siga-util'),

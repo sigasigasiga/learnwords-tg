@@ -25,7 +25,7 @@ inline constexpr std::string_view create_settings = R"lw_cpp(
     CREATE TABLE IF NOT EXISTS `settings`(
         `tg_user_id` BIGINT UNSIGNED NOT NULL,
         `remind_time` TIME CHECK(HOUR(`remind_time`) < 24),
-        `state` TINYINT DEFAULT(0) NOT NULL,
+        `state` TINYINT UNSIGNED DEFAULT(0) NOT NULL,
 
         PRIMARY KEY(`tg_user_id`)
     )

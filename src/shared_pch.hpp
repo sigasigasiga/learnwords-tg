@@ -50,6 +50,7 @@
 #include <boost/utility/base_from_member.hpp>
 #include <fmt/ranges.h>
 #include <fmt/ostream.h>
+#include <magic_enum_all.hpp>
 #include <siga/util.hpp>
 #include <spdlog/spdlog.h>
 #include <Beman/Optional26/optional.hpp>

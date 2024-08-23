@@ -35,6 +35,8 @@ std::string get_os_username()
     }
 }
 
+// TODO: use custom validator based on `magic_enum`:
+// https://www.boost.org/doc/libs/1_86_0/doc/html/program_options/howto.html
 boost::mysql::ssl_mode parse_ssl_mode(std::string_view mode)
 {
     if(mode == "require") {
