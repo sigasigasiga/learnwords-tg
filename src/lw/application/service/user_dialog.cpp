@@ -52,23 +52,52 @@ boost::asio::awaitable<void> process_command( //
 {
     auto raw_state = co_await db.async_get_state(user_id, boost::asio::use_awaitable);
 
+    boost::json::object msg{
+        {"chat_id", user_id}
+    };
+
+    auto &text = msg["text"].emplace_string();
+
+    std::optional<state> new_state;
+
     switch(magic_enum::enum_cast<state>(raw_state).value_or(state::error)) {
         case state::initial: {
+            text = "Greetings!";
             break;
         }
 
         case state::set_remind_time: {
+            text = "TODO";
             break;
         }
 
         case state::add_sentence: {
+            text = "TODO";
             break;
         }
 
         case state::error: {
+            spdlog::error(
+                "Got an erroneous state `{}` for user `{}` from the database",
+                raw_state,
+                user_id
+            );
+
+            new_state = state::initial;
+            text = "Got an internal error, trying to recover... Please, contact the developer";
+
             break;
         }
     }
+
+    assert(!text.empty());
+
+    if(new_state) {
+        co_await //
+            db.async_set_state(user_id, std::to_underlying(*new_state), boost::asio::use_awaitable);
+    }
+
+    co_await tg.async_request("sendMessage", std::move(msg), boost::asio::use_awaitable);
 }
 
 boost::asio::awaitable<void> process_update( //
@@ -89,7 +118,7 @@ boost::asio::awaitable<void> process_update( //
     auto user_id = util::json::if_contains(*message, "from")
                        .and_then(util::json::if_object)
                        .and_then(util::json::if_contains_with("id"))
-                       .and_then(util::json::if_uint64);
+                       .and_then(util::json::if_int64);
 
     if(!text || !user_id) {
         co_return;

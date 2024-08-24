@@ -110,7 +110,8 @@ auto database::async_get_state(std::uint64_t tg_user_id, CompletionHandler &&han
             co_return {ec, 0};
         }
 
-        auto ret = raw_result.rows().at(0).at(0).as_uint64();
+        const auto rows = raw_result.rows();
+        std::uint64_t ret = rows.empty() ? 0 : raw_result.rows().at(0).at(0).as_uint64();
         if(ret > std::numeric_limits<std::uint8_t>::max()) {
             // TODO: maybe we should return the error using `error_code` somehow?
             throw error::exception{error::code::inconsistent_db, "`state` is not uint8"};
