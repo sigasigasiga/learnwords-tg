@@ -12,6 +12,9 @@ processed_result process_response(boost::json::value raw_response)
         proto::error ret;
         ret.description = response.at("description").as_string();
         ret.error_code = response.at("error_code").as_int64();
+
+        // TODO: `raw_params` unused
+        // TODO: use `lw/util/json/functional`
         if(const auto *raw_params = response.if_contains("parameters")) {
             proto::error::response_parameters parameters;
 
