@@ -1,10 +1,36 @@
 #include "lw/telegram/process_response.hpp"
 
+#include "lw/util/json/functional.hpp"
+
 namespace lw::telegram {
+
+namespace {
+
+proto::error::response_parameters make_params(const boost::json::object &obj)
+{
+    proto::error::response_parameters parameters;
+
+    auto migrate = util::json::if_contains(obj, "migrate_to_chat_id") //
+                       .and_then(util::json::if_int64);
+    if(migrate) {
+        parameters.migrate_to_chat_id = *migrate;
+    }
+
+    auto retry = util::json::if_contains(obj, "retry_after") //
+                     .and_then(util::json::if_int64)
+                     .transform(siga::util::construct<std::chrono::seconds>);
+    if(retry) {
+        parameters.retry_after = *retry;
+    }
+
+    return parameters;
+}
+
+} // anonymous namespace
 
 processed_result process_response(boost::json::value raw_response)
 {
-    const auto response = std::move(raw_response).as_object();
+    auto response = std::move(raw_response).as_object();
 
     if(response.at("ok").as_bool()) {
         return std::move(response).at("result");
@@ -13,23 +39,15 @@ processed_result process_response(boost::json::value raw_response)
         ret.description = response.at("description").as_string();
         ret.error_code = response.at("error_code").as_int64();
 
-        // TODO: `raw_params` unused
-        // TODO: use `lw/util/json/functional`
-        if(const auto *raw_params = response.if_contains("parameters")) {
-            proto::error::response_parameters parameters;
+        auto p = util::json::if_contains(response, "parameters") //
+                     .and_then(util::json::if_object)
+                     .transform(make_params);
 
-            if(const auto *raw_migrate = response.if_contains("migrate_to_chat_id")) {
-                parameters.migrate_to_chat_id = raw_migrate->as_int64();
-            }
-
-            if(const auto *raw_retry = response.if_contains("retry_after")) {
-                parameters.retry_after = std::chrono::seconds{raw_retry->as_int64()};
-            }
-
-            ret.parameters = std::move(parameters);
+        if(p) {
+            ret.parameters = *std::move(p);
         }
 
-        return std::unexpected(std::move(ret));
+        return std::unexpected{std::move(ret)};
     }
 }
 
