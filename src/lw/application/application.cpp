@@ -43,7 +43,6 @@ auto make_options_description()
         std::ranges::prev(std::ranges::end(raw_loglevels))
     };
 
-    // TODO: get available values using `magic_enum`
     static const auto loglevel_msg =
         fmt::format("available options: {}", fmt::join(loglevels, ", "));
 
