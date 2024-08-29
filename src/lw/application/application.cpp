@@ -6,6 +6,7 @@
 #include "lw/application/service/tg.hpp"
 #include "lw/application/service/user_dialog.hpp"
 #include "lw/error/code.hpp"
+#include "lw/util/program_options/enum_validator.hpp"
 
 namespace lw::application {
 
@@ -21,8 +22,6 @@ constexpr const char mysql_ssl_opt[] = "mysql-ssl,S";
 constexpr const char telegram_token_opt[] = "telegram-token,t";
 constexpr const char loglevel_opt[] = "loglevel";
 
-constexpr std::array loglevel_names = SPDLOG_LEVEL_NAMES;
-
 std::string get_os_username()
 {
     struct passwd *pw = ::getpwuid(::geteuid());
@@ -35,27 +34,23 @@ std::string get_os_username()
     }
 }
 
-// TODO: use custom validator based on `magic_enum`:
-// https://www.boost.org/doc/libs/1_86_0/doc/html/program_options/howto.html
-boost::mysql::ssl_mode parse_ssl_mode(std::string_view mode)
-{
-    if(mode == "require") {
-        return boost::mysql::ssl_mode::require;
-    } else if(mode == "enable") {
-        return boost::mysql::ssl_mode::enable;
-    } else if(mode == "disable") {
-        return boost::mysql::ssl_mode::disable;
-    } else {
-        throw error::exception{error::code::bad_cmdline_option, "invalid mysql-ssl value"};
-    }
-}
-
 auto make_options_description()
 {
-    static const auto loglevel_msg =
-        fmt::format("available options: {}", fmt::join(loglevel_names, ", "));
+    constexpr auto raw_loglevels = magic_enum::enum_values<spdlog::level::level_enum>();
+    static_assert(raw_loglevels.back() == spdlog::level::level_enum::n_levels);
+    std::span loglevels{
+        std::ranges::begin(raw_loglevels),
+        std::ranges::prev(std::ranges::end(raw_loglevels))
+    };
 
-    constexpr const char mysql_ssl_msg[] = "available values: require, enable, disable";
+    // TODO: get available values using `magic_enum`
+    static const auto loglevel_msg =
+        fmt::format("available options: {}", fmt::join(loglevels, ", "));
+
+    static const auto mysql_ssl_msg = fmt::format(
+        "available options: {}",
+        fmt::join(magic_enum::enum_values<boost::mysql::ssl_mode>(), ", ")
+    );
 
     po::options_description desc{"learnwords-tg options"};
     // TODO: all the auth must be done in the systemd's fashion
@@ -65,10 +60,10 @@ auto make_options_description()
     desc.add_options()
         (help_opt, "produce help message")
         (mysql_socket_opt, po::value<std::string>()->default_value("/tmp/mysql.sock"))
-        (loglevel_opt, po::value<std::string>(), loglevel_msg.c_str())
+        (loglevel_opt, po::value<spdlog::level::level_enum>()->default_value(spdlog::level::info), loglevel_msg.c_str())
         (mysql_user_opt, po::value<std::string>()->default_value(get_os_username()))
         (mysql_password_opt, po::value<std::string>()->default_value(""))
-        (mysql_ssl_opt, po::value<std::string>()->default_value("require"), mysql_ssl_msg)
+        (mysql_ssl_opt, po::value<boost::mysql::ssl_mode>()->default_value(boost::mysql::ssl_mode::require), mysql_ssl_msg.c_str())
         (telegram_token_opt, po::value<std::string>())
     ;
     // clang-format on
@@ -82,16 +77,6 @@ auto parse_cmd_line(const po::options_description &desc, int argc, const char *a
     po::store(po::parse_command_line(argc, argv, desc), ret);
     po::notify(ret);
     return ret;
-}
-
-void set_loglevel(const std::string &loglevel_str)
-{
-    if(std::ranges::find(loglevel_names, loglevel_str) == loglevel_names.end()) {
-        throw error::exception{error::code::bad_cmdline_option, "Unknown loglevel"};
-    }
-
-    const auto loglevel = spdlog::level::from_str(loglevel_str);
-    spdlog::set_level(loglevel);
 }
 
 std::string make_token(const boost::program_options::variables_map &args)
@@ -164,8 +149,7 @@ error::code application::run()
     }
 
     if(args_.count(loglevel_opt)) {
-        const auto &loglevel_str = args_[loglevel_opt].as<std::string>();
-        set_loglevel(loglevel_str);
+        spdlog::set_level(args_[loglevel_opt].as<spdlog::level::level_enum>());
     }
 
     ssl_ctx_.set_default_verify_paths();
@@ -177,7 +161,7 @@ error::code application::run()
         args_["mysql-user"].as<std::string>(),
         args_["mysql-password"].as<std::string>(),
         args_["mysql-socket"].as<std::string>(),
-        parse_ssl_mode(args_["mysql-ssl"].as<std::string>())
+        args_["mysql-ssl"].as<boost::mysql::ssl_mode>()
     );
 
     inventory_->async_init(std::bind_front(&application::on_init, this));
