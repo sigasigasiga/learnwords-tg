@@ -11,7 +11,7 @@ util::asio::coroutine<boost::json::object> long_polling(
     siga::util::flag_set<allowed_updates> allowed
 )
 {
-    std::optional<std::int64_t> offset;
+    util::optional<std::int64_t> offset;
 
     for(;;) {
         boost::json::object params{

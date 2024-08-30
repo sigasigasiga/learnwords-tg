@@ -58,7 +58,7 @@ boost::asio::awaitable<void> process_command( //
 
     auto &text = msg["text"].emplace_string();
 
-    std::optional<state> new_state;
+    util::optional<state> new_state;
 
     switch(magic_enum::enum_cast<state>(raw_state).value_or(state::error)) {
         case state::initial: {

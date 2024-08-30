@@ -6,13 +6,13 @@ struct error
 {
     struct response_parameters
     {
-        std::optional<std::int64_t> migrate_to_chat_id;
-        std::optional<std::chrono::seconds> retry_after;
+        util::optional<std::int64_t> migrate_to_chat_id;
+        util::optional<std::chrono::seconds> retry_after;
     };
 
     std::string description;
     std::intmax_t error_code;
-    std::optional<response_parameters> parameters;
+    util::optional<response_parameters> parameters;
 };
 
 } // namespace lw::telegram::proto

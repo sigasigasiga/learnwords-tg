@@ -27,7 +27,6 @@
 #include <future>
 #include <iterator>
 #include <memory>
-#include <optional>
 #include <ranges>
 #include <source_location>
 #include <stdexcept>
@@ -55,3 +54,6 @@
 #include <siga/util.hpp>
 #include <spdlog/spdlog.h>
 #include <Beman/Optional26/optional.hpp>
+
+// lw
+#include "lw/util/compat.hpp"

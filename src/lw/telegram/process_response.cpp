@@ -10,18 +10,12 @@ proto::error::response_parameters make_params(const boost::json::object &obj)
 {
     proto::error::response_parameters parameters;
 
-    auto migrate = util::json::if_contains(obj, "migrate_to_chat_id") //
-                       .and_then(util::json::if_int64);
-    if(migrate) {
-        parameters.migrate_to_chat_id = *migrate;
-    }
+    parameters.migrate_to_chat_id = util::json::if_contains(obj, "migrate_to_chat_id") //
+                                        .and_then(util::json::if_int64);
 
-    auto retry = util::json::if_contains(obj, "retry_after") //
-                     .and_then(util::json::if_int64)
-                     .transform(siga::util::construct<std::chrono::seconds>);
-    if(retry) {
-        parameters.retry_after = *retry;
-    }
+    parameters.retry_after = util::json::if_contains(obj, "retry_after") //
+                                 .and_then(util::json::if_int64)
+                                 .transform(siga::util::construct<std::chrono::seconds>);
 
     return parameters;
 }
