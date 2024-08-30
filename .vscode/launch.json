@@ -7,7 +7,7 @@
             "name": "(lldb) Launch server",
             "program": "${workspaceFolder}/bin/learnwords-tg",
             "args": ["--loglevel", "trace"],
-            "env": [{"CREDENTIALS_DIRECTORY": "${workspaceFolder}/.vscode/credentials"}],
+            "env": ["CREDENTIALS_DIRECTOR=${workspaceFolder}/.vscode/credentials"],
             "cwd": "${workspaceFolder}",
             "internalConsoleOptions": "openOnSessionStart",
             "runInTerminal": true,
