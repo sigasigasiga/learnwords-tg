@@ -9,6 +9,7 @@ enum class code : int
     bad_cmdline_option = 2,
     no_telegram_token = 3,
     inconsistent_db = 4,
+    no_credentials = 5,
 
     // don't use codes bigger than 125
     // https://unix.stackexchange.com/a/418802

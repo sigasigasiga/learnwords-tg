@@ -15,11 +15,7 @@ namespace {
 namespace po = boost::program_options;
 
 constexpr const char help_opt[] = "help,h";
-constexpr const char mysql_user_opt[] = "mysql-user,u";
-constexpr const char mysql_password_opt[] = "mysql-password,p";
-constexpr const char mysql_socket_opt[] = "mysql-socket,s";
 constexpr const char mysql_ssl_opt[] = "mysql-ssl,S";
-constexpr const char telegram_token_opt[] = "telegram-token,t";
 constexpr const char loglevel_opt[] = "loglevel";
 
 std::string get_os_username()
@@ -52,18 +48,12 @@ auto make_options_description()
     );
 
     po::options_description desc{"learnwords-tg options"};
-    // TODO: all the auth must be done in the systemd's fashion
-    // https://systemd.io/CREDENTIALS/
 
     // clang-format off
     desc.add_options()
         (help_opt, "produce help message")
-        (mysql_socket_opt, po::value<std::string>()->default_value("/tmp/mysql.sock"))
         (loglevel_opt, po::value<spdlog::level::level_enum>()->default_value(spdlog::level::info), loglevel_msg.c_str())
-        (mysql_user_opt, po::value<std::string>()->default_value(get_os_username()))
-        (mysql_password_opt, po::value<std::string>()->default_value(""))
         (mysql_ssl_opt, po::value<boost::mysql::ssl_mode>()->default_value(boost::mysql::ssl_mode::require), mysql_ssl_msg.c_str())
-        (telegram_token_opt, po::value<std::string>())
     ;
     // clang-format on
 
@@ -76,20 +66,6 @@ auto parse_cmd_line(const po::options_description &desc, int argc, const char *a
     po::store(po::parse_command_line(argc, argv, desc), ret);
     po::notify(ret);
     return ret;
-}
-
-std::string make_token(const boost::program_options::variables_map &args)
-{
-    if(const auto token_arg = args["telegram-token"].as<std::string>(); !token_arg.empty()) {
-        return token_arg;
-    } else if(const auto token_env = std::getenv("LEARNWORDS_TELEGRAM_TOKEN")) {
-        return token_env;
-    } else {
-        throw error::exception{
-            error::code::no_telegram_token,
-            "No telegram token. Set it with `-t` or `LEARNWORDS_TELEGRAM_TOKEN` env var"
-        };
-    }
 }
 
 inventory make_inventory(
@@ -134,6 +110,7 @@ application::application(int argc, const char *argv[])
     : ssl_ctx_{boost::asio::ssl::context::tls_client}
     , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
+    , creds_{util::make_credentials().value()} // TODO: throw `error::exception` instead
 {
 }
 
@@ -156,10 +133,11 @@ error::code application::run()
     inventory_ = make_inventory(
         io_.get_executor(),
         ssl_ctx_,
-        make_token(args_),
-        args_["mysql-user"].as<std::string>(),
-        args_["mysql-password"].as<std::string>(),
-        args_["mysql-socket"].as<std::string>(),
+        // TODO: throw `error::exception` instead
+        std::string(std::from_range, creds_("telegram-token").value()),
+        std::string(std::from_range, creds_("mysql-user").value()),
+        std::string(std::from_range, creds_("mysql-password").value()),
+        std::string(std::from_range, creds_("mysql-socket").value()),
         args_["mysql-ssl"].as<boost::mysql::ssl_mode>()
     );
 

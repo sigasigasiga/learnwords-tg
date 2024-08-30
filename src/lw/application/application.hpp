@@ -4,6 +4,7 @@
 
 #include "lw/application/inventory.hpp"
 #include "lw/error/code.hpp"
+#include "lw/util/credentials.hpp"
 
 namespace lw::application {
 
@@ -24,6 +25,7 @@ private:
     boost::program_options::options_description desc_;
     boost::program_options::variables_map args_;
     util::optional<inventory> inventory_;
+    util::credentials creds_;
 };
 
 } // namespace lw::application

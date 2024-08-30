@@ -36,6 +36,7 @@ public:
     auto async_add_sentence(std::string sentence, CompletionHandler &&handler);
 
 private:
+    // TODO: use connection pool
     boost::mysql::any_connection &conn_;
     boost::mysql::statement get_state_;
     boost::mysql::statement set_state_;
