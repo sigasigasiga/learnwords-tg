@@ -2,15 +2,6 @@
 
 namespace lw::util {
 
-namespace {
-
-bool is_space(unsigned char c)
-{
-    return std::isspace(c);
-}
-
-} // namespace
-
 auto credentials::operator()(std::string_view key) const //
     -> std::optional<value>
 {
@@ -32,7 +23,7 @@ const char *credentials::value::end() const noexcept
     auto begin = source_.begin();
     auto ret = source_.end();
 
-    for(; begin != ret && is_space(*std::prev(ret)); --ret)
+    for(; begin != ret && siga::util::is_space(*std::prev(ret)); --ret)
         ;
 
     return ret;
