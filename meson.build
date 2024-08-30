@@ -14,7 +14,7 @@ g_deps = [
   dependency('fmt'),
   dependency('spdlog'),
   dependency('magic_enum'),
-  dependency('boost', modules: ['charconv', 'json', 'program_options']),
+  dependency('boost', modules: ['charconv', 'iostreams', 'json', 'program_options']),
   dependency('openssl'),
   dependency('siga-util'),
 ]
@@ -40,6 +40,8 @@ executable(
     'src/lw/telegram/update/polymorphic_update.cpp',
 
     'src/lw/error/code.cpp',
+
+    'src/lw/util/credentials.cpp',
   ],
   include_directories: g_includes,
   dependencies: g_deps,

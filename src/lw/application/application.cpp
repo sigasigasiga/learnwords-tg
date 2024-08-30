@@ -104,13 +104,25 @@ inventory make_inventory(
     return builder.make_inventory();
 }
 
+auto make_cred_or_throw()
+{
+    if(auto ret = util::make_credentials()) {
+        return *std::move(ret);
+    } else {
+        throw error::exception{
+            error::code::no_credentials,
+            "`CREDENTIALS_DIRECTORY` environment variable is not set"
+        };
+    }
+}
+
 } // anonymous namespace
 
 application::application(int argc, const char *argv[])
     : ssl_ctx_{boost::asio::ssl::context::tls_client}
     , desc_{make_options_description()}
     , args_{parse_cmd_line(desc_, argc, argv)}
-    , creds_{util::make_credentials().value()} // TODO: throw `error::exception` instead
+    , creds_{make_cred_or_throw()}
 {
 }
 
@@ -130,14 +142,25 @@ error::code application::run()
 
     ssl_ctx_.set_default_verify_paths();
 
+    auto get_cred = [this](std::string_view cred) {
+        if(auto ret = creds_(cred).transform(siga::util::construct<std::string>)) {
+            return *std::move(ret);
+        } else {
+            throw error::exception{error::code::no_credentials, cred};
+        }
+    };
+
     inventory_ = make_inventory(
         io_.get_executor(),
         ssl_ctx_,
-        // TODO: throw `error::exception` instead
-        std::string(std::from_range, creds_("telegram-token").value()),
-        std::string(std::from_range, creds_("mysql-user").value()),
-        std::string(std::from_range, creds_("mysql-password").value()),
-        std::string(std::from_range, creds_("mysql-socket").value()),
+        get_cred("telegram-token"),
+        creds_("mysql-user")
+            .transform(siga::util::construct<std::string>)
+            .value_or(siga::util::lazy_eval{get_os_username}),
+        creds_("mysql-password") //
+            .transform(siga::util::construct<std::string>)
+            .value_or(""),
+        get_cred("mysql-socket"),
         args_["mysql-ssl"].as<boost::mysql::ssl_mode>()
     );
 

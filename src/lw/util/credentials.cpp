@@ -2,8 +2,17 @@
 
 namespace lw::util {
 
+namespace {
+
+bool is_space(unsigned char c)
+{
+    return std::isspace(c);
+}
+
+} // namespace
+
 auto credentials::operator()(std::string_view key) const //
-    -> std::optional<boost::iostreams::mapped_file_source>
+    -> std::optional<value>
 {
     auto cred_path = path_ / key;
     if(!std::filesystem::is_regular_file(cred_path)) {
@@ -11,6 +20,22 @@ auto credentials::operator()(std::string_view key) const //
     }
 
     return boost::iostreams::mapped_file_source{cred_path.native()};
+}
+
+const char *credentials::value::begin() const noexcept
+{
+    return source_.begin();
+}
+
+const char *credentials::value::end() const noexcept
+{
+    auto begin = source_.begin();
+    auto ret = source_.end();
+
+    for(; begin != ret && is_space(*std::prev(ret)); --ret)
+        ;
+
+    return ret;
 }
 
 std::optional<credentials> make_credentials()
