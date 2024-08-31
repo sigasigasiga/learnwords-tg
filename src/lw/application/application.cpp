@@ -106,7 +106,7 @@ inventory make_inventory(
 
 auto make_cred_or_throw()
 {
-    if(auto ret = util::make_credentials()) {
+    if(auto ret = systemd::make_credentials_storage()) {
         return *std::move(ret);
     } else {
         throw error::exception{

@@ -33,6 +33,8 @@ executable(
     'src/lw/application/service/tg.cpp',
     'src/lw/application/service/user_dialog.cpp',
 
+    'src/lw/systemd/credentials_storage.cpp',
+
     'src/lw/telegram/exception.cpp',
     'src/lw/telegram/process_response.cpp',
     'src/lw/telegram/update/allowed_updates.cpp',
@@ -40,8 +42,6 @@ executable(
     'src/lw/telegram/update/polymorphic_update.cpp',
 
     'src/lw/error/code.cpp',
-
-    'src/lw/util/credentials.cpp',
   ],
   include_directories: g_includes,
   dependencies: g_deps,
